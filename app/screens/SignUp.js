@@ -40,6 +40,26 @@ export default function SignUp() {
             sunday: { open: '', close: '', accepting: false },
         }
     });
+    const [donorDetails, setDonorDetails] = useState({
+        establishmentType: '',
+        typicalDonations: '',
+        donationFrequency: '',
+        location: {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+        },
+        operatingHours: {
+            monday: { open: '', close: '', available: false },
+            tuesday: { open: '', close: '', available: false },
+            wednesday: { open: '', close: '', available: false },
+            thursday: { open: '', close: '', available: false },
+            friday: { open: '', close: '', available: false },
+            saturday: { open: '', close: '', available: false },
+            sunday: { open: '', close: '', available: false },
+        }
+    });
 
     const signUp = async () => {
         if (password !== confirmPassword) {
@@ -51,6 +71,25 @@ export default function SignUp() {
             const { street, city, state, zipCode } = recipientDetails.location;
             if (!recipientDetails.capacity || !street || !city || !state || !zipCode) {
                 alert("Please fill in all required recipient details");
+                return;
+            }
+            
+            if (zipCode.length !== 5) {
+                alert("Please enter a valid 5-digit ZIP code");
+                return;
+            }
+            
+            if (state.length !== 2) {
+                alert("Please enter a valid 2-letter state code");
+                return;
+            }
+        }
+        
+        if (userType === 'Donor') {
+            const { street, city, state, zipCode } = donorDetails.location;
+            if (!donorDetails.establishmentType || !donorDetails.typicalDonations || 
+                !donorDetails.donationFrequency || !street || !city || !state || !zipCode) {
+                alert("Please fill in all required donor details");
                 return;
             }
             
@@ -77,6 +116,8 @@ export default function SignUp() {
 
             if (userType === 'Recipient') {
                 userData.recipientDetails = recipientDetails;
+            } else if (userType === 'Donor') {
+                userData.donorDetails = donorDetails;
             }
 
             await setDoc(doc(FIREBASE_DB, 'users', response.user.uid), userData);
@@ -249,6 +290,155 @@ export default function SignUp() {
         );
     };
 
+    const renderDonorFields = () => {
+        if (userType !== 'Donor') return null;
+
+        return (
+            <View>
+                <Picker
+                    style={[styles.input, styles.picker]}
+                    selectedValue={donorDetails.establishmentType}
+                    onValueChange={(value) => setDonorDetails(prev => ({
+                        ...prev,
+                        establishmentType: value
+                    }))}
+                >
+                    <Picker.Item label="Select Establishment Type" value="" />
+                    <Picker.Item label="Restaurant" value="restaurant" />
+                    <Picker.Item label="Bakery" value="bakery" />
+                    <Picker.Item label="Grocery Store" value="grocery" />
+                    <Picker.Item label="Cafe" value="cafe" />
+                    <Picker.Item label="Other" value="other" />
+                </Picker>
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Typical Donation Items and Quantities"
+                    multiline
+                    numberOfLines={3}
+                    value={donorDetails.typicalDonations}
+                    onChangeText={(text) => setDonorDetails(prev => ({
+                        ...prev,
+                        typicalDonations: text
+                    }))}
+                />
+
+                <Picker
+                    style={[styles.input, styles.picker]}
+                    selectedValue={donorDetails.donationFrequency}
+                    onValueChange={(value) => setDonorDetails(prev => ({
+                        ...prev,
+                        donationFrequency: value
+                    }))}
+                >
+                    <Picker.Item label="Select Donation Frequency" value="" />
+                    <Picker.Item label="Daily" value="daily" />
+                    <Picker.Item label="Weekly" value="weekly" />
+                    <Picker.Item label="Bi-weekly" value="biweekly" />
+                    <Picker.Item label="Monthly" value="monthly" />
+                    <Picker.Item label="As Available" value="asAvailable" />
+                </Picker>
+
+                <Text style={styles.sectionTitle}>Location Details:</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Street Address"
+                    value={donorDetails.location.street}
+                    onChangeText={(text) => setDonorDetails(prev => ({
+                        ...prev,
+                        location: { ...prev.location, street: text }
+                    }))}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="City"
+                    value={donorDetails.location.city}
+                    onChangeText={(text) => setDonorDetails(prev => ({
+                        ...prev,
+                        location: { ...prev.location, city: text }
+                    }))}
+                />
+                <View style={styles.addressRow}>
+                    <TextInput
+                        style={[styles.input, styles.stateInput]}
+                        placeholder="State"
+                        value={donorDetails.location.state}
+                        autoCapitalize="characters"
+                        maxLength={2}
+                        onChangeText={(text) => setDonorDetails(prev => ({
+                            ...prev,
+                            location: { ...prev.location, state: text }
+                        }))}
+                    />
+                    <TextInput
+                        style={[styles.input, styles.zipInput]}
+                        placeholder="ZIP Code"
+                        value={donorDetails.location.zipCode}
+                        keyboardType="numeric"
+                        maxLength={5}
+                        onChangeText={(text) => setDonorDetails(prev => ({
+                            ...prev,
+                            location: { ...prev.location, zipCode: text }
+                        }))}
+                    />
+                </View>
+
+                <Text style={styles.sectionTitle}>Operating Hours:</Text>
+                {Object.entries(donorDetails.operatingHours).map(([day, hours]) => (
+                    <View key={day} style={styles.dayContainer}>
+                        <Text style={styles.dayText}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
+                        <View style={styles.hoursContainer}>
+                            <TextInput
+                                style={[styles.timeInput, !hours.available && styles.timeInputDisabled]}
+                                placeholder="Open"
+                                value={hours.open}
+                                onChangeText={(text) => setDonorDetails(prev => ({
+                                    ...prev,
+                                    operatingHours: {
+                                        ...prev.operatingHours,
+                                        [day]: { ...prev.operatingHours[day], open: text }
+                                    }
+                                }))}
+                                editable={hours.available}
+                            />
+                            <TextInput
+                                style={[styles.timeInput, !hours.available && styles.timeInputDisabled]}
+                                placeholder="Close"
+                                value={hours.close}
+                                onChangeText={(text) => setDonorDetails(prev => ({
+                                    ...prev,
+                                    operatingHours: {
+                                        ...prev.operatingHours,
+                                        [day]: { ...prev.operatingHours[day], close: text }
+                                    }
+                                }))}
+                                editable={hours.available}
+                            />
+                            <TouchableOpacity
+                                style={[styles.acceptingButton, hours.available && styles.acceptingButtonActive]}
+                                onPress={() => setDonorDetails(prev => ({
+                                    ...prev,
+                                    operatingHours: {
+                                        ...prev.operatingHours,
+                                        [day]: {
+                                            open: hours.available ? '' : hours.open,
+                                            close: hours.available ? '' : hours.close,
+                                            available: !hours.available
+                                        }
+                                    }
+                                }))}
+                            >
+                                <Text style={styles.acceptingButtonText}>
+                                    {hours.available ? 'Available' : 'Unavailable'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ))}
+            </View>
+        );
+    };
+
     return (
         <ScrollView 
             style={styles.container}
@@ -291,6 +481,7 @@ export default function SignUp() {
             </View>
             
             {renderRecipientFields()}
+            {renderDonorFields()}
             
             <TouchableOpacity 
                 style={styles.button}
