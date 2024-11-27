@@ -14,7 +14,7 @@ export default function Login() {
         setLoading(true);
         try {
             const response = await signInWithEmailAndPassword(FIREBASE_AUTH, email, password);
-            navigation.navigate('Inside');
+            navigation.navigate('MainPage');
             console.log(response);
         } catch (error) {
             console.log(error);
