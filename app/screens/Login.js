@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import {View, Text, TextInput, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import { FIREBASE_AUTH } from '../../FirebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+import Button from '../components/Button';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -26,6 +27,14 @@ export default function Login() {
 
     return (
         <View style={styles.container}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <Image source={require('../../assets/icon.png')} style={{width: 96, height: 96, borderRadius: "100%", padding: 2}} />
+                <View>
+                    <Text style={{ fontWeight: "bold", fontSize: 22 }}>FoodFlow</Text>
+                    <Text style={{ fontSize: 16, maxWidth: 200 }}>Algorithmic food donation like never seen before!</Text>
+                </View>
+            </View>
+
             <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -42,21 +51,19 @@ export default function Login() {
                 secureTextEntry={true}
             />
             
-            <TouchableOpacity 
-                style={styles.button}
-                onPress={signIn}
-                disabled={loading}
-            >
-                <Text style={styles.buttonText}>
-                    {loading ? 'Loading...' : 'Login'}
-                </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-                onPress={() => navigation.navigate('SignUp')}
-            >
-                <Text style={styles.link}>Don't have an account? Sign Up</Text>
-            </TouchableOpacity>
+            {/*<TouchableOpacity */}
+            {/*    style={styles.button}*/}
+            {/*    onPress={signIn}*/}
+            {/*    disabled={loading}*/}
+            {/*>*/}
+            {/*    <Text style={styles.buttonText}>*/}
+            {/*        {loading ? 'Loading...' : 'Login'}*/}
+            {/*    </Text>*/}
+            {/*</TouchableOpacity>*/}
+            <Button onPress={signIn} type="primary" disabled={loading}>{loading ? 'Loading...' : 'Login'}</Button>
+            <Button onPress={() => navigation.navigate('SignUp')} type="link">
+                Don't have an account? Sign Up
+            </Button>
         </View>
     )
 }
