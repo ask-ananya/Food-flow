@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rnauth.foodflow.GJHG557hH2",
     },
     "android": {
       "adaptiveIcon": {
