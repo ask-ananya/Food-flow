@@ -28,7 +28,7 @@ export default function Login() {
     return (
         <View style={styles.container}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-                <Image source={require('../../assets/icon.png')} style={{width: 96, height: 96, borderRadius: "100%", padding: 2}} />
+                <Image source={require('../../assets/icon.png')} style={{width: 96, height: 96, borderRadius: "100%", padding: 2, margin: 10}} />
                 <View>
                     <Text style={{ fontWeight: "bold", fontSize: 22 }}>FoodFlow</Text>
                     <Text style={{ fontSize: 16, maxWidth: 200 }}>Algorithmic food donation like never seen before!</Text>
