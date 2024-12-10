@@ -27,29 +27,39 @@ export default function Login() {
 
     return (
         <View style={styles.container}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-                <Image source={require('../../assets/icon.png')} style={{width: 96, height: 96, borderRadius: "100%", padding: 2}} />
+            <View style={{ flexDirection: "col", alignItems: "center", justifyContent: "center", marginBottom: 20, textAlign: "center" }}>
+                <Image source={require('../../assets/icon.png')} style={{width: 96, height: 96, borderWeight: 2, borderColor: "black", borderRadius: "100%", padding: 2}} />
                 <View>
-                    <Text style={{ fontWeight: "bold", fontSize: 22 }}>FoodFlow</Text>
-                    <Text style={{ fontSize: 16, maxWidth: 200 }}>Algorithmic food donation like never seen before!</Text>
+                    <Text style={{ fontWeight: "bold", fontSize: 22, textAlign: "center" }}>FoodFlow</Text>
+                    <Text style={{ fontSize: 16, maxWidth: 200, textAlign: "center" }}>Food Donation. Done right.</Text>
                 </View>
             </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                autoCapitalize="none"
-                onChangeText={(text) => setEmail(text)}
-                value={email}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                autoCapitalize="none"
-                onChangeText={(text) => setPassword(text)}
-                value={password}
-                secureTextEntry={true}
-            />
+            <View>
+                <Text>
+                    Email:
+                </Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="email@example.com"
+                    autoCapitalize="none"
+                    onChangeText={(text) => setEmail(text)}
+                    value={email}
+                />
+            </View>
+            <View style={{paddingTop: 20}}>
+                <Text>
+                    Password:
+                </Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    autoCapitalize="none"
+                    onChangeText={(text) => setPassword(text)}
+                    value={password}
+                    secureTextEntry={true}
+                />
+            </View>
             
             {/*<TouchableOpacity */}
             {/*    style={styles.button}*/}
@@ -73,6 +83,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         padding: 20,
+        bottom: 40
     },
     input: {
         marginVertical: 4,
