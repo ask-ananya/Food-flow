@@ -7,6 +7,9 @@ import { Picker } from '@react-native-picker/picker';
 import { FIREBASE_DB } from '../../FirebaseConfig';
 import { setDoc, doc } from 'firebase/firestore';
 
+// Replace with your actual OpenRouteService API key
+const OPENROUTE_SERVICE_API_KEY = '5b3ce3597851110001cf624832fdc07e4faf477fa76a70c083547c65';
+
 export default function SignUp() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -61,6 +64,38 @@ export default function SignUp() {
         }
     });
 
+    // New function to geocode address
+    const geocodeAddress = async (address) => {
+        try {
+            const response = await fetch(
+                `https://api.openrouteservice.org/geocode/search?api_key=${OPENROUTE_SERVICE_API_KEY}&text=${encodeURIComponent(address)}&size=1`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Geocoding request failed');
+            }
+
+            const data = await response.json();
+
+            if (data.features && data.features.length > 0) {
+                const [longitude, latitude] = data.features[0].geometry.coordinates;
+                return { longitude, latitude };
+            } else {
+                throw new Error('No coordinates found for the given address');
+            }
+        } catch (error) {
+            console.error('Geocoding error:', error);
+            Alert.alert('Geocoding Error', 'Could not find coordinates for the provided address');
+            return null;
+        }
+    };
+
     const signUp = async () => {
         if (password !== confirmPassword) {
             alert("Passwords don't match!");
@@ -114,6 +149,24 @@ export default function SignUp() {
                 createdAt: new Date().toISOString()
             };
 
+            // Determine which details to use based on user type
+            const details = userType === 'Recipient' ? recipientDetails : 
+                            userType === 'Donor' ? donorDetails : null;
+
+            if (details && details.location) {
+                // Create full address string
+                const fullAddress = `${details.location.street}, ${details.location.city}, ${details.location.state} ${details.location.zipCode}`;
+                
+                // Attempt to geocode the address
+                const coordinates = await geocodeAddress(fullAddress);
+                
+                if (coordinates) {
+                    // Add coordinates to the location details
+                    details.location.coordinates = coordinates;
+                }
+            }
+
+            // Add details to userData
             if (userType === 'Recipient') {
                 userData.recipientDetails = recipientDetails;
             } else if (userType === 'Donor') {
