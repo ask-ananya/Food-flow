@@ -27,8 +27,8 @@ export default function Login() {
 
     return (
         <View style={styles.container}>
-            <View style={{ flexDirection: "col", alignItems: "center", justifyContent: "center", marginBottom: 20, textAlign: "center" }}>
-                <Image source={require('../../assets/icon.png')} style={{width: 96, height: 96, borderWeight: 2, borderColor: "black", borderRadius: "100%", padding: 2}} />
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                <Image source={require('../../assets/icon.png')} style={{width: 96, height: 96, borderRadius: "100%", padding: 2, margin: 10}} />
                 <View>
                     <Text style={{ fontWeight: "bold", fontSize: 22, textAlign: "center" }}>FoodFlow</Text>
                     <Text style={{ fontSize: 16, maxWidth: 200, textAlign: "center" }}>Food Donation. Done right.</Text>
