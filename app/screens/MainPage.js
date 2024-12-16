@@ -149,11 +149,11 @@ export default function MainPage() {
                         {/* Metrics Section */}
                         <View style={styles.metricsContainer}>
                             <View style={styles.metricCard}>
-                                <Text style={styles.metricNumber}>5</Text>
+                                <Text style={styles.metricNumber}>0</Text>
                                 <Text style={styles.metricLabel}>Donation Spots</Text>
                             </View>
                             <View style={[styles.metricCard, styles.primaryMetricCard]}>
-                                <Text style={{ ...styles.metricNumber, fontSize: 40 }}>23</Text>
+                                <Text style={{ ...styles.metricNumber, fontSize: 40 }}>0</Text>
                                 <Text
                                     style={{
                                         ...styles.metricLabel,
@@ -166,7 +166,7 @@ export default function MainPage() {
                                 </Text>
                             </View>
                             <View style={styles.metricCard}>
-                                <Text style={styles.metricNumber}>10</Text>
+                                <Text style={styles.metricNumber}>0</Text>
                                 <Text style={styles.metricLabel}>Drivers Nearby</Text>
                             </View>
                         </View>
@@ -181,7 +181,7 @@ export default function MainPage() {
                                 </View>
                                 <View style={styles.cardContent}>
                                     <Image
-                                        source={{ uri: 'https://dummyimage.com/300x16:9' }} // Replace with actual image URLs
+                                        source={{ uri: 'https://tapinto-production.s3.amazonaws.com/uploads/articles/ed/best_crop_ca81afaa67fa1758964a_Edison_Senior_Center.jpg?id=5473061' }} // Replace with actual image URLs
                                         style={styles.urgentImageLeft}
                                     />
                                     <View style={styles.cardText}>
@@ -201,7 +201,7 @@ export default function MainPage() {
                             <View style={styles.urgentCard}>
                                 <View style={styles.cardContent}>
                                     <Image
-                                        source={{ uri: 'https://dummyimage.com/300x16:9' }} // Replace with actual image URLs
+                                        source={{ uri: 'https://www.dprplaymore.org/ImageRepository/Document?documentID=511' }} // Replace with actual image URLs
                                         style={styles.urgentImageLeft}
                                     />
                                     <View style={styles.cardText}>
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     },
     urgentImage: {
         width: '100%',
-        height: 120,
+        height: '100%',
         borderRadius: 10,
     },
     urgentTitle: {
