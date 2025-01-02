@@ -4,6 +4,7 @@ import Login from "./app/screens/Login";
 import SignUp from "./app/screens/SignUp";
 import MainPage from "./app/screens/MainPage";
 import Welcome from "./app/screens/Welcome";
+import DetailsPage from './app/screens/DetailsPage';
 
 const Stack = createNativeStackNavigator();
 
@@ -15,6 +16,7 @@ export default function App() {
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="SignUp" component={SignUp} />
         <Stack.Screen name="MainPage" component={MainPage} options={{ headerShown: false }}/>
+        <Stack.Screen name="DetailsPage" component={DetailsPage} />
       </Stack.Navigator>
     </NavigationContainer>
   );

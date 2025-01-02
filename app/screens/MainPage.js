@@ -12,14 +12,14 @@ import {
     Dimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient'; // Install with `expo install expo-linear-gradient`
-import {useEffect, useState} from 'react';
-import {FIREBASE_AUTH} from '../../FirebaseConfig';
-import {doc, getDoc, updateDoc} from 'firebase/firestore';
-import {FIREBASE_DB} from '../../FirebaseConfig';
+import { useEffect, useState } from 'react';
+import { FIREBASE_AUTH } from '../../FirebaseConfig';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { FIREBASE_DB } from '../../FirebaseConfig';
 import Checkbox from 'expo-checkbox'; // Install with `expo install expo-checkbox`
-import {Ionicons} from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function MainPage() {
+export default function MainPage({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [donorModalVisible, setDonorModalVisible] = useState(false);
     const [capacity, setCapacity] = useState('');
@@ -121,8 +121,8 @@ export default function MainPage() {
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>FoodFlow</Text>
                     <View style={styles.headerIcons}>
-                        <Ionicons name="person-circle-outline" size={30} color="black" style={styles.icon}/>
-                        <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon}/>
+                        <Ionicons name="person-circle-outline" size={30} color="black" style={styles.icon} />
+                        <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon} />
                     </View>
                 </View>
 
@@ -181,13 +181,22 @@ export default function MainPage() {
                                 </View>
                                 <View style={styles.cardContent}>
                                     <Image
-                                        source={{ uri: 'https://tapinto-production.s3.amazonaws.com/uploads/articles/ed/best_crop_ca81afaa67fa1758964a_Edison_Senior_Center.jpg?id=5473061' }} // Replace with actual image URLs
+                                        source={{ uri: 'https://tapinto-production.s3.amazonaws.com/uploads/articles/ed/best_crop_ca81afaa67fa1758964a_Edison_Senior_Center.jpg?id=5473061' }}
                                         style={styles.urgentImageLeft}
                                     />
                                     <View style={styles.cardText}>
                                         <Text style={styles.urgentTitle}>Edison Senior Center</Text>
                                         <View style={styles.cardActions}>
-                                            <TouchableOpacity style={styles.detailsButton}>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        name: 'Edison Senior Center',
+                                                        image: 'https://tapinto-production.s3.amazonaws.com/uploads/articles/ed/best_crop_ca81afaa67fa1758964a_Edison_Senior_Center.jpg?id=5473061',
+                                                        donationCenterId: "sahilghostyboi",
+                                                    })
+                                                }
+                                            >
                                                 <Text style={styles.detailsButtonText}>Details...</Text>
                                             </TouchableOpacity>
                                             <Ionicons name="thumbs-up-outline" size={24} color="gray" />
@@ -201,13 +210,22 @@ export default function MainPage() {
                             <View style={styles.urgentCard}>
                                 <View style={styles.cardContent}>
                                     <Image
-                                        source={{ uri: 'https://www.dprplaymore.org/ImageRepository/Document?documentID=511' }} // Replace with actual image URLs
+                                        source={{ uri: 'https://www.dprplaymore.org/ImageRepository/Document?documentID=511' }}
                                         style={styles.urgentImageLeft}
                                     />
                                     <View style={styles.cardText}>
                                         <Text style={styles.urgentTitle}>Johnson Center</Text>
                                         <View style={styles.cardActions}>
-                                            <TouchableOpacity style={styles.detailsButton}>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        name: 'Johnson Center',
+                                                        image: 'https://www.dprplaymore.org/ImageRepository/Document?documentID=511',
+                                                        donationCenterId: "sahilghostyboi",
+                                                    })
+                                                }
+                                            >
                                                 <Text style={styles.detailsButtonText}>Details...</Text>
                                             </TouchableOpacity>
                                             <Ionicons name="thumbs-up-outline" size={24} color="gray" />
@@ -230,15 +248,15 @@ export default function MainPage() {
                 {/* Bottom Navigation */}
                 <View style={styles.bottomNav}>
                     <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="home-outline" size={24} color="black"/>
+                        <Ionicons name="home-outline" size={24} color="black" />
                         <Text style={styles.navLabel}>Explore</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="time-outline" size={24} color="black"/>
+                        <Ionicons name="time-outline" size={24} color="black" />
                         <Text style={styles.navLabel}>History</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="settings-outline" size={24} color="black"/>
+                        <Ionicons name="settings-outline" size={24} color="black" />
                         <Text style={styles.navLabel}>Settings</Text>
                     </TouchableOpacity>
                 </View>
@@ -295,7 +313,7 @@ export default function MainPage() {
                                     <Checkbox
                                         value={foodTypes[key]}
                                         onValueChange={(newValue) =>
-                                            setFoodTypes((prev) => ({...prev, [key]: newValue}))
+                                            setFoodTypes((prev) => ({ ...prev, [key]: newValue }))
                                         }
                                     />
                                     <Text style={styles.checkboxLabel}>{key.replace(/([A-Z])/g, ' $1')}</Text>
@@ -321,7 +339,6 @@ export default function MainPage() {
             </SafeAreaView>
         </View>
     );
-
 }
 
 const styles = StyleSheet.create({
