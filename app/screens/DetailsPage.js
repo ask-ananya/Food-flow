@@ -19,8 +19,10 @@ export default function DetailsPage({ route, navigation }) {
 
     const fetchDonationNeeds = async () => {
         try {
-            const centerRef = doc(FIREBASE_DB, 'donationCenters', donationCenterId);
-            const centerDoc = await getDoc(centerRef);
+            const centerRef
+                = doc(FIREBASE_DB, 'donationCenters', donationCenterId);
+            const centerDoc
+                = await getDoc(centerRef);
             if (centerDoc.exists()) {
                 setDonationNeeds(centerDoc.data().needs || []);
             } else {
