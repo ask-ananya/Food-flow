@@ -11,15 +11,15 @@ import {
     Image,
     Dimensions
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient'; // Install with `expo install expo-linear-gradient`
-import { useEffect, useState } from 'react';
-import { FIREBASE_AUTH } from '../../FirebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { FIREBASE_DB } from '../../FirebaseConfig';
+import {LinearGradient} from 'expo-linear-gradient'; // Install with `expo install expo-linear-gradient`
+import {useEffect, useState} from 'react';
+import {FIREBASE_AUTH} from '../../FirebaseConfig';
+import {doc, collection, getDoc, getDocs, updateDoc} from 'firebase/firestore';
+import {FIREBASE_DB} from '../../FirebaseConfig';
 import Checkbox from 'expo-checkbox'; // Install with `expo install expo-checkbox`
-import { Ionicons } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 
-export default function MainPage({ navigation }) {
+export default function MainPage({navigation}) {
     const [modalVisible, setModalVisible] = useState(false);
     const [donorModalVisible, setDonorModalVisible] = useState(false);
     const [capacity, setCapacity] = useState('');
@@ -32,9 +32,28 @@ export default function MainPage({ navigation }) {
         vegetarian: false,
     });
 
+    const [donationCenters, setDonationCenters] = useState([]);
+
     useEffect(() => {
         checkUserTypeAndShowPopup();
+        loadPlacesInNeed();
     }, []);
+
+    const loadPlacesInNeed = async () => {
+        let donationcenters = [];
+        const querySnapshot = await getDocs(collection(FIREBASE_DB, 'publicRecipients'));
+        // get all docs from there
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            donationcenters.push({
+                id: doc.id,
+                name: data.name,
+                image: data.image,
+                isUrgent: data.isUrgent,
+            });
+        });
+        setDonationCenters(donationcenters);
+    }
 
     const checkUserTypeAndShowPopup = async () => {
         const currentUser = FIREBASE_AUTH.currentUser;
@@ -121,16 +140,16 @@ export default function MainPage({ navigation }) {
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>FoodFlow</Text>
                     <View style={styles.headerIcons}>
-                        <Ionicons name="person-circle-outline" size={30} color="black" style={styles.icon} />
-                        <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon} />
+                        <Ionicons name="person-circle-outline" size={30} color="black" style={styles.icon}/>
+                        <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon}/>
                     </View>
                 </View>
 
-                <View style={{ flex: 1, padding: 16, backgroundColor: "" }}>
+                <View style={{flex: 1, padding: 16, backgroundColor: ""}}>
 
                     {/* Input Section */}
                     <View style={styles.inputContainer}>
-                        <Ionicons name="location-outline" size={20} color="gray" />
+                        <Ionicons name="location-outline" size={20} color="gray"/>
                         <TextInput
                             style={styles.input}
                             placeholder="Make a donation today..."
@@ -139,7 +158,7 @@ export default function MainPage({ navigation }) {
                     </View>
 
                     {/* Space Between Sections */}
-                    <View style={{ flex: 1 }} />
+                    <View style={{flex: 1}}/>
 
                     {/* Recommendations Section */}
                     <ScrollView contentContainerStyle={{
@@ -153,7 +172,7 @@ export default function MainPage({ navigation }) {
                                 <Text style={styles.metricLabel}>Donation Spots</Text>
                             </View>
                             <View style={[styles.metricCard, styles.primaryMetricCard]}>
-                                <Text style={{ ...styles.metricNumber, fontSize: 40 }}>0</Text>
+                                <Text style={{...styles.metricNumber, fontSize: 40}}>0</Text>
                                 <Text
                                     style={{
                                         ...styles.metricLabel,
@@ -173,95 +192,112 @@ export default function MainPage({ navigation }) {
 
                         {/* Urgent Need Section */}
                         <View style={styles.urgentContainer}>
-                            {/* Card 1 */}
-                            <View style={styles.urgentCard}>
-                                <View style={styles.urgentLabelContainer}>
-                                    <Ionicons name="alert-circle-outline" size={18} color="red" style={styles.icon} />
-                                    <Text style={styles.urgentLabel}>Urgent Need</Text>
-                                </View>
-                                <View style={styles.cardContent}>
-                                    <Image
-                                        source={{ uri: 'https://tapinto-production.s3.amazonaws.com/uploads/articles/ed/best_crop_ca81afaa67fa1758964a_Edison_Senior_Center.jpg?id=5473061' }}
-                                        style={styles.urgentImageLeft}
-                                    />
-                                    <View style={styles.cardText}>
-                                        <Text style={styles.urgentTitle}>Edison Senior Center</Text>
-                                        <View style={styles.cardActions}>
-                                            <TouchableOpacity
-                                                style={styles.detailsButton}
-                                                onPress={() =>
-                                                    navigation.navigate('DetailsPage', {
-                                                        name: 'Edison Senior Center',
-                                                        image: 'https://tapinto-production.s3.amazonaws.com/uploads/articles/ed/best_crop_ca81afaa67fa1758964a_Edison_Senior_Center.jpg?id=5473061',
-                                                        donationCenterId: "sahilghostyboi",
-                                                    })
-                                                }
-                                            >
-                                                <Text style={styles.detailsButtonText}>Details...</Text>
-                                            </TouchableOpacity>
-                                            <Ionicons name="thumbs-up-outline" size={24} color="gray" />
-                                            <Ionicons name="thumbs-down-outline" size={24} color="gray" />
+                            {donationCenters.length > 0 && (
+                                <View style={styles.urgentCard}>
+                                    {donationCenters[0].isUrgent && (
+                                        <View style={styles.urgentLabelContainer}>
+                                            <Ionicons name="alert-circle-outline" size={18} color="red"
+                                                      style={styles.icon}/>
+                                            <Text style={styles.urgentLabel}>Urgent Need</Text>
+                                        </View>
+                                    )}
+                                    <View style={styles.cardContent}>
+                                        <Image
+                                            source={{uri: donationCenters[0].image}}
+                                            style={styles.urgentImageLeft}
+                                        />
+                                        <View style={styles.cardText}>
+                                            <Text style={styles.urgentTitle}>{donationCenters[0].name}</Text>
+                                            <View style={styles.cardActions}>
+                                                <TouchableOpacity
+                                                    style={styles.detailsButton}
+                                                    onPress={() =>
+                                                        navigation.navigate('DetailsPage', {
+                                                            name: donationCenters[0].name,
+                                                            image: donationCenters[0].image,
+                                                            donationCenterId: donationCenters[0].id,
+                                                        })
+                                                    }
+                                                >
+                                                    <Text style={styles.detailsButtonText}>Details...</Text>
+                                                </TouchableOpacity>
+                                                <Ionicons name="thumbs-up-outline" size={24} color="gray"/>
+                                                <Ionicons name="thumbs-down-outline" size={24} color="gray"/>
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
-                            </View>
+                            )}
 
                             {/* Card 2 */}
-                            <View style={styles.urgentCard}>
-                                <View style={styles.cardContent}>
-                                    <Image
-                                        source={{ uri: 'https://www.dprplaymore.org/ImageRepository/Document?documentID=511' }}
-                                        style={styles.urgentImageLeft}
-                                    />
-                                    <View style={styles.cardText}>
-                                        <Text style={styles.urgentTitle}>Johnson Center</Text>
-                                        <View style={styles.cardActions}>
-                                            <TouchableOpacity
-                                                style={styles.detailsButton}
-                                                onPress={() =>
-                                                    navigation.navigate('DetailsPage', {
-                                                        name: 'Johnson Center',
-                                                        image: 'https://www.dprplaymore.org/ImageRepository/Document?documentID=511',
-                                                        donationCenterId: "sahilghostyboi",
-                                                    })
-                                                }
-                                            >
-                                                <Text style={styles.detailsButtonText}>Details...</Text>
-                                            </TouchableOpacity>
-                                            <Ionicons name="thumbs-up-outline" size={24} color="gray" />
-                                            <Ionicons name="thumbs-down-outline" size={24} color="gray" />
+                            {donationCenters.length > 1 && (
+                                <View style={styles.urgentCard}>
+                                    {donationCenters[1].isUrgent && (
+                                        <View style={styles.urgentLabelContainer}>
+                                            <Ionicons name="alert-circle-outline" size={18} color="red"
+                                                      style={styles.icon}/>
+                                            <Text style={styles.urgentLabel}>Urgent Need</Text>
+                                        </View>
+                                    )}
+                                    <View style={styles.cardContent}>
+                                        <Image
+                                            source={{uri: donationCenters[1].image}}
+                                            style={styles.urgentImageLeft}
+                                        />
+                                        <View style={styles.cardText}>
+                                            <Text style={styles.urgentTitle}>{donationCenters[1].name}</Text>
+                                            <View style={styles.cardActions}>
+                                                <TouchableOpacity
+                                                    style={styles.detailsButton}
+                                                    onPress={() =>
+                                                        navigation.navigate('DetailsPage', {
+                                                            name: donationCenters[1].name,
+                                                            image: donationCenters[1].image,
+                                                            donationCenterId: donationCenters[1].id,
+                                                        })
+                                                    }
+                                                >
+                                                    <Text style={styles.detailsButtonText}>Details...</Text>
+                                                </TouchableOpacity>
+                                                <Ionicons name="thumbs-up-outline" size={24} color="gray"/>
+                                                <Ionicons name="thumbs-down-outline" size={24} color="gray"/>
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
-                            </View>
+                            )}
 
                             {/* View More Recommendations Button */}
-                            <TouchableOpacity style={styles.recommendationsButton}>
-                                <Text style={styles.recommendationsButtonText}>
-                                    View 5 more recommendations...
-                                </Text>
-                            </TouchableOpacity>
+                            {donationCenters.length > 2 && (
+                                <TouchableOpacity style={styles.recommendationsButton}>
+                                    <Text style={styles.recommendationsButtonText}>
+                                        View {donationCenters.length - 2} more recommendations...
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </ScrollView>
                 </View>
 
-                {/* Bottom Navigation */}
+                {/* Bottom Navigation */
+                }
                 <View style={styles.bottomNav}>
                     <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="home-outline" size={24} color="black" />
+                        <Ionicons name="home-outline" size={24} color="black"/>
                         <Text style={styles.navLabel}>Explore</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="time-outline" size={24} color="black" />
+                        <Ionicons name="time-outline" size={24} color="black"/>
                         <Text style={styles.navLabel}>History</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="settings-outline" size={24} color="black" />
+                        <Ionicons name="settings-outline" size={24} color="black"/>
                         <Text style={styles.navLabel}>Settings</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Recipient Modal */}
+                {/* Recipient Modal */
+                }
                 <Modal
                     animationType="slide"
                     transparent={true}
@@ -298,7 +334,8 @@ export default function MainPage({ navigation }) {
                     </View>
                 </Modal>
 
-                {/* Donor Modal */}
+                {/* Donor Modal */
+                }
                 <Modal
                     animationType="slide"
                     transparent={true}
@@ -313,7 +350,7 @@ export default function MainPage({ navigation }) {
                                     <Checkbox
                                         value={foodTypes[key]}
                                         onValueChange={(newValue) =>
-                                            setFoodTypes((prev) => ({ ...prev, [key]: newValue }))
+                                            setFoodTypes((prev) => ({...prev, [key]: newValue}))
                                         }
                                     />
                                     <Text style={styles.checkboxLabel}>{key.replace(/([A-Z])/g, ' $1')}</Text>
@@ -338,7 +375,8 @@ export default function MainPage({ navigation }) {
                 </Modal>
             </SafeAreaView>
         </View>
-    );
+    )
+        ;
 }
 
 const styles = StyleSheet.create({
