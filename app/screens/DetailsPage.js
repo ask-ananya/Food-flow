@@ -5,169 +5,157 @@ import {
     Image,
     TouchableOpacity,
     StyleSheet,
+    ScrollView,
 } from 'react-native';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { FIREBASE_AUTH, FIREBASE_DB } from '../../FirebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+import { FIREBASE_DB } from '../../FirebaseConfig';
 
 export default function DetailsPage({ route, navigation }) {
-    const { name, image, donationCenterId } = route.params;
-    const [donationNeeds, setDonationNeeds] = useState([]);
-    const [response, setResponse] = useState(null); // To track accept/decline response
+    const { recipientName, recipientImage, recipientId, donorName, donorImage, donorId } = route.params;
+
+    const [recipientDetails, setRecipientDetails] = useState(null);
+    const [donorDetails, setDonorDetails] = useState(null);
+
     useEffect(() => {
-        fetchDonationNeeds();
+        fetchRecipientDetails();
+        fetchDonorDetails();
     }, []);
 
-    const fetchDonationNeeds = async () => {
+    const fetchRecipientDetails = async () => {
         try {
-            const centerRef
-                = doc(FIREBASE_DB, 'donationCenters', donationCenterId);
-            const centerDoc
-                = await getDoc(centerRef);
-            if (centerDoc.exists()) {
-                setDonationNeeds(centerDoc.data().needs || []);
+            const recipientRef = doc(FIREBASE_DB, 'users', recipientId);
+            const recipientDoc = await getDoc(recipientRef);
+            if (recipientDoc.exists()) {
+                setRecipientDetails(recipientDoc.data()); // Store recipient info
             } else {
-                console.error('Donation center not found.');
+                console.error('Recipient not found.');
             }
         } catch (error) {
-            console.error('Error fetching donation needs:', error);
+            console.error('Error fetching recipient details:', error);
         }
     };
 
-    const handleResponse = async (decision) => {
-        const currentUser = FIREBASE_AUTH.currentUser;
-        if (!currentUser) return;
-
-        const userResponse = {
-            userId: currentUser.uid,
-            donationCenterId,
-            response: decision,
-            timestamp: new Date().toISOString(),
-        };
-
+    const fetchDonorDetails = async () => {
         try {
-            const responsesRef = doc(FIREBASE_DB, 'responses', `${currentUser.uid}_${donationCenterId}`);
-            await updateDoc(responsesRef, userResponse, { merge: true });
-            setResponse(decision);
+            const donorRef = doc(FIREBASE_DB, 'users', donorId);
+            const donorDoc = await getDoc(donorRef);
+            if (donorDoc.exists()) {
+                setDonorDetails(donorDoc.data()); // Store donor info
+            } else {
+                console.error('Donor not found.');
+            }
         } catch (error) {
-            console.error('Error saving response:', error);
+            console.error('Error fetching donor details:', error);
         }
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>{name}</Text>
-            <Image source={{ uri: image }} style={styles.image} />
+        <ScrollView contentContainerStyle={styles.container}>
+            <View style={styles.section}>
+                <Text style={styles.title}>Recipient: {recipientName}</Text>
+                <Image source={{ uri: recipientImage }} style={styles.image} />
+                {recipientDetails && (
+                    <View style={styles.infoContainer}>
+                        <Text style={styles.subTitle}>Urgency:</Text>
+                        <Text style={styles.textItem}>
+                            {recipientDetails.isUrgent ? 'Urgent Need' : 'Not Urgent'}
+                        </Text>
+                        
+                        <Text style={styles.subTitle}>Address:</Text>
+                        <Text style={styles.textItem}>
+                            {recipientDetails.address || 'No address available'}
+                        </Text>
 
-            <View style={{ marginVertical: 20 }}>
-                <Text style={styles.subTitle}>Donation Required:</Text>
-                {donationNeeds.length > 0 ? (
-                    donationNeeds.map((need, index) => (
-                        <Text key={index} style={styles.needItem}>- {need}</Text>
-                    ))
-                ) : (
-                    <Text style={styles.noNeeds}>No specific requirements listed.</Text>
+                        <Text style={styles.subTitle}>Capacity:</Text>
+                        <Text style={styles.textItem}>
+                            {recipientDetails.capacity || 'Capacity not specified'} lbs
+                        </Text>
+                    </View>
                 )}
             </View>
 
-            {response ? (
-                <View style={styles.responseContainer}>
-                    <Text style={styles.responseText}>
-                        {response === 'accept' ? 'Accepted!' : 'Declined!'}
-                    </Text>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.navigate('MainPage')}
-                    >
-                        <Text style={styles.buttonText}>Back to MainPage</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={styles.acceptButton}
-                        onPress={() => handleResponse('accept')}
-                    >
-                        <Text style={styles.buttonText}>Accept</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.declineButton}
-                        onPress={() => handleResponse('decline')}
-                    >
-                        <Text style={styles.buttonText}>Decline</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-        </View>
+            <View style={styles.divider} />
+
+            <View style={styles.section}>
+                <Text style={styles.title}>Donor: {donorName}</Text>
+                <Image source={{ uri: donorImage }} style={styles.image} />
+                {donorDetails && (
+                    <View style={styles.infoContainer}>
+                        <Text style={styles.subTitle}>Food Types Available:</Text>
+                        {Object.entries(donorDetails.foodTypes).map(
+                            ([type, value]) =>
+                                value && (
+                                    <Text key={type} style={styles.textItem}>
+                                        {type.replace(/([A-Z])/g, ' $1')}
+                                    </Text>
+                                )
+                        )}
+
+                        <Text style={styles.subTitle}>Last Updated:</Text>
+                        <Text style={styles.textItem}>
+                            {new Date(donorDetails.lastUpdated).toLocaleDateString()}
+                        </Text>
+                    </View>
+                )}
+            </View>
+
+            <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.navigate('MainPage')}
+            >
+                <Text style={styles.buttonText}>Back to MainPage</Text>
+            </TouchableOpacity>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
         padding: 20,
         backgroundColor: '#fff',
+    },
+    section: {
+        marginBottom: 30,
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 20,
+        marginBottom: 15,
     },
     image: {
         width: '100%',
         height: 200,
         borderRadius: 10,
-        marginBottom: 20,
+        marginBottom: 15,
+    },
+    infoContainer: {
+        marginTop: 10,
     },
     subTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 10,
+        marginTop: 10,
     },
-    needItem: {
+    textItem: {
         fontSize: 16,
         color: '#333',
-        marginVertical: 2,
+        marginTop: 5,
     },
-    noNeeds: {
-        fontSize: 16,
-        color: 'gray',
-        fontStyle: 'italic',
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        width: '100%',
-    },
-    acceptButton: {
-        backgroundColor: '#4CAF50',
+    backButton: {
+        backgroundColor: '#2196F3',
         padding: 10,
         borderRadius: 5,
-    },
-    declineButton: {
-        backgroundColor: '#F44336',
-        padding: 10,
-        borderRadius: 5,
+        alignItems: 'center',
+        marginTop: 20,
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
     },
-    responseContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    responseText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 20,
-    },
-    backButton: {
-        backgroundColor: '#2196F3',
-        padding: 10,
-        borderRadius: 5,
+    divider: {
+        height: 1,
+        backgroundColor: '#ccc',
+        marginVertical: 20,
     },
 });

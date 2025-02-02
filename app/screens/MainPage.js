@@ -11,18 +11,21 @@ import {
     Image,
     Dimensions
 } from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient'; // Install with `expo install expo-linear-gradient`
+import {LinearGradient} from 'expo-linear-gradient';
 import {useEffect, useState} from 'react';
 import {FIREBASE_AUTH} from '../../FirebaseConfig';
-import {doc, collection, getDoc, getDocs, updateDoc} from 'firebase/firestore';
+import {doc, collection, getDoc, getDocs, updateDoc, setDoc, deleteDoc} from 'firebase/firestore';
 import {FIREBASE_DB} from '../../FirebaseConfig';
-import Checkbox from 'expo-checkbox'; // Install with `expo install expo-checkbox`
+import Checkbox from 'expo-checkbox';
 import {Ionicons} from '@expo/vector-icons';
 
 export default function MainPage({navigation}) {
-    const [modalVisible, setModalVisible] = useState(false);
+    const [isPublicDonor, setIsPublicDonor] = useState(false);
+    const [donorList, setDonorList] = useState([]);
+    const [recipientModalVisible, setRecipientModalVisible] = useState(false);
     const [donorModalVisible, setDonorModalVisible] = useState(false);
     const [capacity, setCapacity] = useState('');
+    const [isPublicRecipient, setIsPublicRecipient] = useState(false);
     const [foodTypes, setFoodTypes] = useState({
         dairyFree: false,
         glutenFree: false,
@@ -32,27 +35,68 @@ export default function MainPage({navigation}) {
         vegetarian: false,
     });
 
-    const [donationCenters, setDonationCenters] = useState([]);
+    const [recipientList, setRecipientList] = useState([]);
 
     useEffect(() => {
         checkUserTypeAndShowPopup();
-        loadPlacesInNeed();
+        checkIfPublicRecipient();
+        loadPublicRecipients();
+        loadPublicDonors();
+        checkIfPublicDonor();
     }, []);
 
-    const loadPlacesInNeed = async () => {
-        let donationcenters = [];
-        const querySnapshot = await getDocs(collection(FIREBASE_DB, 'publicRecipients'));
-        // get all docs from there
+    const checkIfPublicDonor = async () => {
+        const currentUser = FIREBASE_AUTH.currentUser;
+        if (!currentUser) return;
+    
+        try {
+            const publicDonorRef = doc(FIREBASE_DB, 'publicDonors', currentUser.uid);
+            const publicDonorDoc = await getDoc(publicDonorRef);
+            setIsPublicDonor(publicDonorDoc.exists());
+        } catch (error) {
+            console.error('Error checking public donor status:', error);
+        }
+    };
+    
+    const loadPublicDonors = async () => {
+        let donorsList = [];
+        const querySnapshot = await getDocs(collection(FIREBASE_DB, 'publicDonors'));
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            donationcenters.push({
+            donorsList.push({
                 id: doc.id,
-                name: data.name,
-                image: data.image,
-                isUrgent: data.isUrgent,
+                name: data.organizationName,
             });
         });
-        setDonationCenters(donationcenters);
+        setDonorList(donorsList);
+        console.log(donorsList);
+    };
+
+    const checkIfPublicRecipient = async () => {
+        const currentUser = FIREBASE_AUTH.currentUser;
+        if (!currentUser) return;
+
+        try {
+            const publicRecipientRef = doc(FIREBASE_DB, 'publicRecipients', currentUser.uid);
+            const publicRecipientDoc = await getDoc(publicRecipientRef);
+            setIsPublicRecipient(publicRecipientDoc.exists());
+        } catch (error) {
+            console.error('Error checking public recipient status:', error);
+        }
+    };
+
+    const loadPublicRecipients = async () => {
+        let recipientsList = [];
+        const querySnapshot = await getDocs(collection(FIREBASE_DB, 'publicRecipients'));
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            recipientsList.push({
+                id: doc.id,
+                name: data.organizationName,
+            });
+        });
+        setRecipientList(recipientsList);
+        console.log(recipientsList);
     }
 
     const checkUserTypeAndShowPopup = async () => {
@@ -68,7 +112,7 @@ export default function MainPage({navigation}) {
                 const userType = userDoc.data().userType;
 
                 if (userType === 'Recipient') {
-                    setModalVisible(true);
+                    setRecipientModalVisible(true);
                 } else if (userType === 'Donor') {
                     setDonorModalVisible(true);
                 }
@@ -80,37 +124,105 @@ export default function MainPage({navigation}) {
 
     const handleSubmitRecipient = async () => {
         if (!capacity) return;
-
+    
         const currentUser = FIREBASE_AUTH.currentUser;
-        if (!currentUser) return;
-
-        const userRef = doc(FIREBASE_DB, 'users', currentUser.uid);
-
+        if (!currentUser) {
+            console.error('No authenticated user found');
+            return;
+        }
+    
         try {
+            // First update user details
+            const userRef = doc(FIREBASE_DB, 'users', currentUser.uid);
             await updateDoc(userRef, {
                 'recipientDetails.current_capacity': Number(capacity),
                 'recipientDetails.last_updated': new Date().toISOString(),
             });
-            console.log('Storage capacity updated successfully');
-            setModalVisible(false);
+    
+            // Then handle public recipient status
+            if (isPublicRecipient) {
+                const publicRecipientRef = doc(FIREBASE_DB, 'publicRecipients', currentUser.uid);
+                
+                // Get current user data
+                const userDoc = await getDoc(userRef);
+                if (!userDoc.exists()) {
+                    throw new Error('User document not found');
+                }
+                
+                const userData = userDoc.data();
+                
+                // Add to public recipients with all required fields
+                await setDoc(publicRecipientRef, {
+                    organizationName: userData.organizationName || 'Unknown Recipient',
+                });
+                
+                console.log('Successfully added to public recipients');
+            } else {
+                // Remove from public recipients if exists
+                const publicRecipientRef = doc(FIREBASE_DB, 'publicRecipients', currentUser.uid);
+                await deleteDoc(publicRecipientRef);
+                console.log('Successfully removed from public recipients');
+            }
+    
+            setRecipientModalVisible(false);
             setCapacity('');
+            await loadPublicRecipients(); // Reload the list
+            
         } catch (error) {
-            console.error('Error updating capacity:', error);
+            console.error('Detailed error:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
+            // Show more specific error based on the operation
+            if (error.code === 'permission-denied') {
+                console.error('Permission denied. Please check if you are properly authenticated.');
+            }
         }
     };
 
+
     const handleSubmitDonor = async () => {
         const currentUser = FIREBASE_AUTH.currentUser;
-        if (!currentUser) return;
-
-        const userRef = doc(FIREBASE_DB, 'users', currentUser.uid);
-
+        if (!currentUser) {
+            console.error('No authenticated user found');
+            return;
+        }
+    
         try {
+            // First update user details
+            const userRef = doc(FIREBASE_DB, 'users', currentUser.uid);
             await updateDoc(userRef, {
                 'donorDetails.food_types': foodTypes,
                 'donorDetails.last_updated': new Date().toISOString(),
             });
-            console.log('Donor food types updated successfully');
+    
+            // Then handle public donor status
+            if (isPublicDonor) {
+                const publicDonorRef = doc(FIREBASE_DB, 'publicDonors', currentUser.uid);
+                
+                // Get current user data
+                const userDoc = await getDoc(userRef);
+                if (!userDoc.exists()) {
+                    throw new Error('User document not found');
+                }
+                
+                const userData = userDoc.data();
+                console.log(userData);
+                
+                // Add to public donors with all required fields
+                await setDoc(publicDonorRef, {
+                    organizationName: userData.organizationName || 'Unknown Donor'
+                });
+                
+                console.log('Successfully added to public donors');
+            } else {
+                // Remove from public donors if exists
+                const publicDonorRef = doc(FIREBASE_DB, 'publicDonors', currentUser.uid);
+                await deleteDoc(publicDonorRef);
+                console.log('Successfully removed from public donors');
+            }
+    
             setDonorModalVisible(false);
             setFoodTypes({
                 dairyFree: false,
@@ -120,10 +232,19 @@ export default function MainPage({navigation}) {
                 vegan: false,
                 vegetarian: false,
             });
+            
         } catch (error) {
-            console.error('Error updating donor food types:', error);
+            console.error('Detailed error:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+            });
+            if (error.code === 'permission-denied') {
+                console.error('Permission denied. Please check if you are properly authenticated.');
+            }
         }
     };
+
 
     return (
         <View style={{
@@ -190,88 +311,61 @@ export default function MainPage({navigation}) {
                             </View>
                         </View>
 
-                        {/* Urgent Need Section */}
                         <View style={styles.urgentContainer}>
-                            {donationCenters.length > 0 && (
+                            {/* First Card - Combined Recipient and Donor */}
+                            {(recipientList.length > 0 || donorList.length > 0) && (
                                 <View style={styles.urgentCard}>
-                                    {donationCenters[0].isUrgent && (
-                                        <View style={styles.urgentLabelContainer}>
-                                            <Ionicons name="alert-circle-outline" size={18} color="red"
-                                                      style={styles.icon}/>
-                                            <Text style={styles.urgentLabel}>Urgent Need</Text>
-                                        </View>
-                                    )}
-                                    <View style={styles.cardContent}>
-                                        <Image
-                                            source={{uri: donationCenters[0].image}}
-                                            style={styles.urgentImageLeft}
-                                        />
-                                        <View style={styles.cardText}>
-                                            <Text style={styles.urgentTitle}>{donationCenters[0].name}</Text>
-                                            <View style={styles.cardActions}>
-                                                <TouchableOpacity
-                                                    style={styles.detailsButton}
-                                                    onPress={() =>
-                                                        navigation.navigate('DetailsPage', {
-                                                            name: donationCenters[0].name,
-                                                            image: donationCenters[0].image,
-                                                            donationCenterId: donationCenters[0].id,
-                                                        })
-                                                    }
-                                                >
-                                                    <Text style={styles.detailsButtonText}>Details...</Text>
-                                                </TouchableOpacity>
-                                                <Ionicons name="thumbs-up-outline" size={24} color="gray"/>
-                                                <Ionicons name="thumbs-down-outline" size={24} color="gray"/>
+                                    <View style={styles.combinedCardContent}>
+                                        {/* Recipient Section */}
+                                        {recipientList.length > 0 && (
+                                            <View style={styles.cardHalf}>
+                                                <View style={styles.urgentLabelContainer}>
+                                                    <Ionicons name="alert-circle-outline" size={18} color="red" style={styles.icon}/>
+                                                    <Text style={styles.urgentLabel}>Urgent Need</Text>
+                                                </View>
+                                                <View style={styles.cardContent}>
+                                                    <View style={styles.cardText}>
+                                                        <Text style={styles.cardTitle}>Recipient: {recipientList[0].name}</Text>
+                                                        <TouchableOpacity
+                                                            style={styles.detailsButton}
+                                                            onPress={() =>
+                                                                navigation.navigate('DetailsPage', {
+                                                                    recipientName: recipientList[0].name,
+                                                                    recipientId: recipientList[0].id,
+                                                                    donorName: donorList[0].name,
+                                                                    donorId: donorList[0].id,
+                                                                })
+                                                            }
+                                                        >
+                                                            <Text style={styles.detailsButtonText}>Details...</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                </View>
                                             </View>
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
+                                        )}
 
-                            {/* Card 2 */}
-                            {donationCenters.length > 1 && (
-                                <View style={styles.urgentCard}>
-                                    {donationCenters[1].isUrgent && (
-                                        <View style={styles.urgentLabelContainer}>
-                                            <Ionicons name="alert-circle-outline" size={18} color="red"
-                                                      style={styles.icon}/>
-                                            <Text style={styles.urgentLabel}>Urgent Need</Text>
-                                        </View>
-                                    )}
-                                    <View style={styles.cardContent}>
-                                        <Image
-                                            source={{uri: donationCenters[1].image}}
-                                            style={styles.urgentImageLeft}
-                                        />
-                                        <View style={styles.cardText}>
-                                            <Text style={styles.urgentTitle}>{donationCenters[1].name}</Text>
-                                            <View style={styles.cardActions}>
-                                                <TouchableOpacity
-                                                    style={styles.detailsButton}
-                                                    onPress={() =>
-                                                        navigation.navigate('DetailsPage', {
-                                                            name: donationCenters[1].name,
-                                                            image: donationCenters[1].image,
-                                                            donationCenterId: donationCenters[1].id,
-                                                        })
-                                                    }
-                                                >
-                                                    <Text style={styles.detailsButtonText}>Details...</Text>
-                                                </TouchableOpacity>
-                                                <Ionicons name="thumbs-up-outline" size={24} color="gray"/>
-                                                <Ionicons name="thumbs-down-outline" size={24} color="gray"/>
+                                        {/* Divider */}
+                                        <View style={styles.cardDivider} />
+
+                                        {/* Donor Section */}
+                                        {donorList.length > 0 && (
+                                            <View style={styles.cardHalf}>
+                                                <View style={styles.cardContent}>
+                                                    <View style={styles.cardText}>
+                                                        <Text style={styles.cardTitle}>Donor: {donorList[0].name}</Text>
+                                                    </View>
+                                                </View>
                                             </View>
-                                        </View>
+                                        )}
                                     </View>
                                 </View>
                             )}
 
                             {/* View More Recommendations Button */}
-                            {donationCenters.length > 2 && (
+                            {recipientList.length > 2 && (
                                 <TouchableOpacity style={styles.recommendationsButton}>
                                     <Text style={styles.recommendationsButtonText}>
-                                        View {donationCenters.length - 2} more recommendations...
+                                        View {recipientList.length - 2} more recommendations...
                                     </Text>
                                 </TouchableOpacity>
                             )}
@@ -301,13 +395,13 @@ export default function MainPage({navigation}) {
                 <Modal
                     animationType="slide"
                     transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
+                    visible={recipientModalVisible}
+                    onRequestClose={() => setRecipientModalVisible(false)}
                 >
                     <View style={styles.centeredView}>
                         <View style={styles.modalView}>
                             <Text style={styles.modalText}>
-                                How much food storage capacity do you currently have? (in pounds)
+                                How much food storage capacity do you currently have? (in square feet)
                             </Text>
                             <TextInput
                                 style={styles.input}
@@ -316,10 +410,17 @@ export default function MainPage({navigation}) {
                                 keyboardType="numeric"
                                 placeholder="Enter capacity"
                             />
+                            <View style={styles.checkboxContainer}>
+                                <Checkbox
+                                    value={isPublicRecipient}
+                                    onValueChange={setIsPublicRecipient}
+                                />
+                                <Text style={styles.checkboxLabel}>List as public recipient (visible to donors)</Text>
+                            </View>
                             <View style={styles.buttonContainer}>
                                 <TouchableOpacity
                                     style={[styles.button, styles.cancelButton]}
-                                    onPress={() => setModalVisible(false)}
+                                    onPress={() => setRecipientModalVisible(false)}
                                 >
                                     <Text style={styles.buttonText}>Cancel</Text>
                                 </TouchableOpacity>
@@ -356,6 +457,13 @@ export default function MainPage({navigation}) {
                                     <Text style={styles.checkboxLabel}>{key.replace(/([A-Z])/g, ' $1')}</Text>
                                 </View>
                             ))}
+                            <View style={styles.checkboxContainer}>
+                                <Checkbox
+                                    value={isPublicDonor}
+                                    onValueChange={setIsPublicDonor}
+                                />
+                                <Text style={styles.checkboxLabel}>List as public donor (visible to recipients)</Text>
+                            </View>
                             <View style={styles.buttonContainer}>
                                 <TouchableOpacity
                                     style={[styles.button, styles.cancelButton]}
@@ -375,8 +483,7 @@ export default function MainPage({navigation}) {
                 </Modal>
             </SafeAreaView>
         </View>
-    )
-        ;
+    );
 }
 
 const styles = StyleSheet.create({
@@ -633,5 +740,34 @@ const styles = StyleSheet.create({
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.2,
         shadowRadius: 5,
+    },
+    combinedCardContent: {
+        flexDirection: 'row',
+        borderRadius: 15,
+        overflow: 'hidden',
+    },
+    cardHalf: {
+        flex: 1,
+        padding: 10,
+    },
+    cardDivider: {
+        width: 1,
+        backgroundColor: '#E0E0E0',
+        marginVertical: 10,
+    },
+    cardTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    foodTypesText: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 5,
+    },
+    lastUpdatedText: {
+        fontSize: 11,
+        color: '#888',
+        fontStyle: 'italic',
     },
 });
