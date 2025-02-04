@@ -26,7 +26,7 @@ export default function DetailsPage({ route, navigation }) {
             const recipientRef = doc(FIREBASE_DB, 'users', recipientId);
             const recipientDoc = await getDoc(recipientRef);
             if (recipientDoc.exists()) {
-                setRecipientDetails(recipientDoc.data()); // Store recipient info
+                setRecipientDetails(recipientDoc.data().recipientDetails); // Store recipient info
             } else {
                 console.error('Recipient not found.');
             }
@@ -40,7 +40,7 @@ export default function DetailsPage({ route, navigation }) {
             const donorRef = doc(FIREBASE_DB, 'users', donorId);
             const donorDoc = await getDoc(donorRef);
             if (donorDoc.exists()) {
-                setDonorDetails(donorDoc.data()); // Store donor info
+                setDonorDetails(donorDoc.data().donorDetails); // Store donor info
             } else {
                 console.error('Donor not found.');
             }
@@ -82,7 +82,7 @@ export default function DetailsPage({ route, navigation }) {
                 {donorDetails && (
                     <View style={styles.infoContainer}>
                         <Text style={styles.subTitle}>Food Types Available:</Text>
-                        {Object.entries(donorDetails.foodTypes).map(
+                        {Object.entries(donorDetails["food_types"]).map(
                             ([type, value]) =>
                                 value && (
                                     <Text key={type} style={styles.textItem}>
@@ -101,9 +101,9 @@ export default function DetailsPage({ route, navigation }) {
 
             <TouchableOpacity
                 style={styles.backButton}
-                onPress={() => navigation.navigate('MainPage')}
+                onPress={() => navigation.goBack(null)}
             >
-                <Text style={styles.buttonText}>Back to MainPage</Text>
+                <Text style={styles.buttonText}>Return back to Home</Text>
             </TouchableOpacity>
         </ScrollView>
     );

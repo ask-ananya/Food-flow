@@ -48,7 +48,7 @@ export default function MainPage({navigation}) {
     const checkIfPublicDonor = async () => {
         const currentUser = FIREBASE_AUTH.currentUser;
         if (!currentUser) return;
-    
+
         try {
             const publicDonorRef = doc(FIREBASE_DB, 'publicDonors', currentUser.uid);
             const publicDonorDoc = await getDoc(publicDonorRef);
@@ -57,7 +57,7 @@ export default function MainPage({navigation}) {
             console.error('Error checking public donor status:', error);
         }
     };
-    
+
     const loadPublicDonors = async () => {
         let donorsList = [];
         const querySnapshot = await getDocs(collection(FIREBASE_DB, 'publicDonors'));
@@ -124,13 +124,13 @@ export default function MainPage({navigation}) {
 
     const handleSubmitRecipient = async () => {
         if (!capacity) return;
-    
+
         const currentUser = FIREBASE_AUTH.currentUser;
         if (!currentUser) {
             console.error('No authenticated user found');
             return;
         }
-    
+
         try {
             // First update user details
             const userRef = doc(FIREBASE_DB, 'users', currentUser.uid);
@@ -138,24 +138,24 @@ export default function MainPage({navigation}) {
                 'recipientDetails.current_capacity': Number(capacity),
                 'recipientDetails.last_updated': new Date().toISOString(),
             });
-    
+
             // Then handle public recipient status
             if (isPublicRecipient) {
                 const publicRecipientRef = doc(FIREBASE_DB, 'publicRecipients', currentUser.uid);
-                
+
                 // Get current user data
                 const userDoc = await getDoc(userRef);
                 if (!userDoc.exists()) {
                     throw new Error('User document not found');
                 }
-                
+
                 const userData = userDoc.data();
-                
+
                 // Add to public recipients with all required fields
                 await setDoc(publicRecipientRef, {
                     organizationName: userData.organizationName || 'Unknown Recipient',
                 });
-                
+
                 console.log('Successfully added to public recipients');
             } else {
                 // Remove from public recipients if exists
@@ -163,11 +163,11 @@ export default function MainPage({navigation}) {
                 await deleteDoc(publicRecipientRef);
                 console.log('Successfully removed from public recipients');
             }
-    
+
             setRecipientModalVisible(false);
             setCapacity('');
             await loadPublicRecipients(); // Reload the list
-            
+
         } catch (error) {
             console.error('Detailed error:', {
                 code: error.code,
@@ -188,7 +188,7 @@ export default function MainPage({navigation}) {
             console.error('No authenticated user found');
             return;
         }
-    
+
         try {
             // First update user details
             const userRef = doc(FIREBASE_DB, 'users', currentUser.uid);
@@ -196,25 +196,25 @@ export default function MainPage({navigation}) {
                 'donorDetails.food_types': foodTypes,
                 'donorDetails.last_updated': new Date().toISOString(),
             });
-    
+
             // Then handle public donor status
             if (isPublicDonor) {
                 const publicDonorRef = doc(FIREBASE_DB, 'publicDonors', currentUser.uid);
-                
+
                 // Get current user data
                 const userDoc = await getDoc(userRef);
                 if (!userDoc.exists()) {
                     throw new Error('User document not found');
                 }
-                
+
                 const userData = userDoc.data();
                 console.log(userData);
-                
+
                 // Add to public donors with all required fields
                 await setDoc(publicDonorRef, {
                     organizationName: userData.organizationName || 'Unknown Donor'
                 });
-                
+
                 console.log('Successfully added to public donors');
             } else {
                 // Remove from public donors if exists
@@ -222,7 +222,7 @@ export default function MainPage({navigation}) {
                 await deleteDoc(publicDonorRef);
                 console.log('Successfully removed from public donors');
             }
-    
+
             setDonorModalVisible(false);
             setFoodTypes({
                 dairyFree: false,
@@ -232,7 +232,7 @@ export default function MainPage({navigation}) {
                 vegan: false,
                 vegetarian: false,
             });
-            
+
         } catch (error) {
             console.error('Detailed error:', {
                 code: error.code,
@@ -251,6 +251,11 @@ export default function MainPage({navigation}) {
             backgroundColor: 'white',
             ...styles.container
         }}>
+            <LinearGradient
+                // Background Linear Gradient
+                colors={['rgba(255, 255, 255, 1)', 'rgba(255,255,255,1)']}
+                style={styles.background}
+            />
             <SafeAreaView style={styles.container}>
                 <LinearGradient
                     // Background Linear Gradient
@@ -278,8 +283,7 @@ export default function MainPage({navigation}) {
                         />
                     </View>
 
-                    {/* Space Between Sections */}
-                    <View style={{flex: 1}}/>
+
 
                     {/* Recommendations Section */}
                     <ScrollView contentContainerStyle={{
@@ -288,11 +292,11 @@ export default function MainPage({navigation}) {
                     }}>
                         {/* Metrics Section */}
                         <View style={styles.metricsContainer}>
-                            <View style={styles.metricCard}>
+                            <View style={[styles.metricCard, styles.smallCircleCard]}>
                                 <Text style={styles.metricNumber}>0</Text>
-                                <Text style={styles.metricLabel}>Donation Spots</Text>
+                                <Text style={styles.metricLabel}>Donation{"\n"}Spots</Text>
                             </View>
-                            <View style={[styles.metricCard, styles.primaryMetricCard]}>
+                            <View style={[styles.metricCard, styles.primaryMetricCard, styles.circleCard]}>
                                 <Text style={{...styles.metricNumber, fontSize: 40}}>0</Text>
                                 <Text
                                     style={{
@@ -305,11 +309,14 @@ export default function MainPage({navigation}) {
                                     Total Donations
                                 </Text>
                             </View>
-                            <View style={styles.metricCard}>
+                            <View style={[styles.metricCard, styles.smallCircleCard]}>
                                 <Text style={styles.metricNumber}>0</Text>
-                                <Text style={styles.metricLabel}>Drivers Nearby</Text>
+                                <Text style={styles.metricLabel}>Drivers{"\n"}Nearby</Text>
                             </View>
                         </View>
+
+                        {/* Space Between Sections */}
+                        <View style={{flex: 1}}/>
 
                         <View style={styles.urgentContainer}>
                             {/* First Card - Combined Recipient and Donor */}
@@ -319,33 +326,24 @@ export default function MainPage({navigation}) {
                                         {/* Recipient Section */}
                                         {recipientList.length > 0 && (
                                             <View style={styles.cardHalf}>
-                                                <View style={styles.urgentLabelContainer}>
-                                                    <Ionicons name="alert-circle-outline" size={18} color="red" style={styles.icon}/>
-                                                    <Text style={styles.urgentLabel}>Urgent Need</Text>
-                                                </View>
+                                                {recipientList[0].urgentNeed && (
+                                                    <View style={styles.urgentLabelContainer}>
+                                                        <Ionicons name="alert-circle-outline" size={18} color="red"
+                                                                  style={styles.icon}/>
+                                                        <Text style={styles.urgentLabel}>Urgent Need</Text>
+                                                    </View>
+                                                )}
                                                 <View style={styles.cardContent}>
                                                     <View style={styles.cardText}>
-                                                        <Text style={styles.cardTitle}>Recipient: {recipientList[0].name}</Text>
-                                                        <TouchableOpacity
-                                                            style={styles.detailsButton}
-                                                            onPress={() =>
-                                                                navigation.navigate('DetailsPage', {
-                                                                    recipientName: recipientList[0].name,
-                                                                    recipientId: recipientList[0].id,
-                                                                    donorName: donorList[0].name,
-                                                                    donorId: donorList[0].id,
-                                                                })
-                                                            }
-                                                        >
-                                                            <Text style={styles.detailsButtonText}>Details...</Text>
-                                                        </TouchableOpacity>
+                                                        <Text
+                                                            style={styles.cardTitle}>Recipient: {recipientList[0].name}</Text>
                                                     </View>
                                                 </View>
                                             </View>
                                         )}
 
                                         {/* Divider */}
-                                        <View style={styles.cardDivider} />
+                                        <View style={styles.cardDivider}/>
 
                                         {/* Donor Section */}
                                         {donorList.length > 0 && (
@@ -358,6 +356,19 @@ export default function MainPage({navigation}) {
                                             </View>
                                         )}
                                     </View>
+                                    <TouchableOpacity
+                                        style={styles.detailsButton}
+                                        onPress={() =>
+                                            navigation.navigate('DetailsPage', {
+                                                recipientName: recipientList[0].name,
+                                                recipientId: recipientList[0].id,
+                                                donorName: donorList[0].name,
+                                                donorId: donorList[0].id,
+                                            })
+                                        }
+                                    >
+                                        <Text style={styles.detailsButtonText}>Details...</Text>
+                                    </TouchableOpacity>
                                 </View>
                             )}
 
@@ -527,6 +538,20 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         fontSize: 16,
     },
+    circleCard: {
+        width: 150, // Adjust the size as needed
+        height: 150, // Adjust the size as needed
+        borderRadius: 75, // Half of the width/height to make it a circle
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    smallCircleCard: {
+        width: 100, // Adjust the size as needed
+        height: 100, // Adjust the size as needed
+        borderRadius: 50, // Half of the width/height to make it a circle
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -605,6 +630,7 @@ const styles = StyleSheet.create({
     },
     metricCard: {
         alignItems: 'center',
+        textAlign: 'center',
         backgroundColor: 'rgb(78, 126, 171)',
         padding: 5,
         borderRadius: 10,
@@ -618,11 +644,13 @@ const styles = StyleSheet.create({
     metricNumber: {
         fontSize: 30,
         fontWeight: 'bold',
-        color: 'white'
+        color: 'white',
+        textAlign: 'center',
     },
     metricLabel: {
         fontSize: 14,
         color: 'white',
+        textAlign: 'center'
     },
     urgentContainer: {
         flex: 1,
