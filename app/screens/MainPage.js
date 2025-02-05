@@ -252,14 +252,12 @@ export default function MainPage({navigation}) {
             ...styles.container
         }}>
             <LinearGradient
-                // Background Linear Gradient
-                colors={['rgba(255, 255, 255, 1)', 'rgba(255,255,255,1)']}
+                colors={['#E8EAF6', '#C5CAE9']}
                 style={styles.background}
             />
             <SafeAreaView style={styles.container}>
                 <LinearGradient
-                    // Background Linear Gradient
-                    colors={['rgba(255, 255, 255, 1)', 'rgba(80,104,154,1)']}
+                    colors={['#ffffff', '#E8EAF6']}
                     style={styles.background}
                 />
                 {/* Header Section */}
@@ -292,26 +290,53 @@ export default function MainPage({navigation}) {
                     }}>
                         {/* Metrics Section */}
                         <View style={styles.metricsContainer}>
-                            <View style={[styles.metricCard, styles.smallCircleCard]}>
-                                <Text style={styles.metricNumber}>0</Text>
-                                <Text style={styles.metricLabel}>Donation{"\n"}Spots</Text>
-                            </View>
-                            <View style={[styles.metricCard, styles.primaryMetricCard, styles.circleCard]}>
-                                <Text style={{...styles.metricNumber, fontSize: 40}}>0</Text>
-                                <Text
+                            <View style={[styles.metricCard, styles.smallMetricCard]}>
+                                <LinearGradient
+                                    colors={['#E8EAF6', '#C5CAE9']}
                                     style={{
-                                        ...styles.metricLabel,
-                                        fontWeight: 'normal',
-                                        fontSize: 18,
-                                        textAlign: 'center',
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: 16,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        padding: 12,
                                     }}
                                 >
-                                    Total Donations
-                                </Text>
+                                    <Text style={styles.metricNumber}>0</Text>
+                                    <Text style={styles.metricLabel}>Donation{"\n"}Spots</Text>
+                                </LinearGradient>
                             </View>
-                            <View style={[styles.metricCard, styles.smallCircleCard]}>
-                                <Text style={styles.metricNumber}>0</Text>
-                                <Text style={styles.metricLabel}>Drivers{"\n"}Nearby</Text>
+                            <View style={[styles.metricCard, styles.primaryMetricCard]}>
+                                <LinearGradient
+                                    colors={['#303F9F', '#3949AB']}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: 16,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        padding: 16,
+                                    }}
+                                >
+                                    <Text style={{...styles.metricNumber, color: 'white'}}>0</Text>
+                                    <Text style={{...styles.metricLabel, color: 'white'}}>Total Donations</Text>
+                                </LinearGradient>
+                            </View>
+                            <View style={[styles.metricCard, styles.smallMetricCard]}>
+                                <LinearGradient
+                                    colors={['#E8EAF6', '#C5CAE9']}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: 16,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        padding: 12,
+                                    }}
+                                >
+                                    <Text style={styles.metricNumber}>0</Text>
+                                    <Text style={styles.metricLabel}>Drivers{"\n"}Nearby</Text>
+                                </LinearGradient>
                             </View>
                         </View>
 
@@ -326,19 +351,8 @@ export default function MainPage({navigation}) {
                                         {/* Recipient Section */}
                                         {recipientList.length > 0 && (
                                             <View style={styles.cardHalf}>
-                                                {recipientList[0].urgentNeed && (
-                                                    <View style={styles.urgentLabelContainer}>
-                                                        <Ionicons name="alert-circle-outline" size={18} color="red"
-                                                                  style={styles.icon}/>
-                                                        <Text style={styles.urgentLabel}>Urgent Need</Text>
-                                                    </View>
-                                                )}
-                                                <View style={styles.cardContent}>
-                                                    <View style={styles.cardText}>
-                                                        <Text
-                                                            style={styles.cardTitle}>Recipient: {recipientList[0].name}</Text>
-                                                    </View>
-                                                </View>
+                                                <Text style={styles.cardSectionTitle}>RECIPIENT</Text>
+                                                <Text style={styles.cardOrganizationName}>{recipientList[0].name}</Text>
                                             </View>
                                         )}
 
@@ -348,11 +362,8 @@ export default function MainPage({navigation}) {
                                         {/* Donor Section */}
                                         {donorList.length > 0 && (
                                             <View style={styles.cardHalf}>
-                                                <View style={styles.cardContent}>
-                                                    <View style={styles.cardText}>
-                                                        <Text style={styles.cardTitle}>Donor: {donorList[0].name}</Text>
-                                                    </View>
-                                                </View>
+                                                <Text style={styles.cardSectionTitle}>DONOR</Text>
+                                                <Text style={styles.cardOrganizationName}>{donorList[0].name}</Text>
                                             </View>
                                         )}
                                     </View>
@@ -367,7 +378,7 @@ export default function MainPage({navigation}) {
                                             })
                                         }
                                     >
-                                        <Text style={styles.detailsButtonText}>Details...</Text>
+                                        <Text style={styles.detailsButtonText}>Details</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
@@ -387,16 +398,27 @@ export default function MainPage({navigation}) {
                 {/* Bottom Navigation */
                 }
                 <View style={styles.bottomNav}>
-                    <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="home-outline" size={24} color="black"/>
-                        <Text style={styles.navLabel}>Explore</Text>
+                    <TouchableOpacity 
+                        style={styles.navItem}
+                        onPress={() => navigation.navigate('MainPage')}
+                    >
+                        <Ionicons name="home-outline" size={24} color="gray" />
+                        <Text style={styles.navLabel}>Home</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="time-outline" size={24} color="black"/>
+
+                    <TouchableOpacity 
+                        style={styles.navItem}
+                        onPress={() => navigation.navigate('History')}
+                    >
+                        <Ionicons name="time-outline" size={24} color="gray" />
                         <Text style={styles.navLabel}>History</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.navItem}>
-                        <Ionicons name="settings-outline" size={24} color="black"/>
+
+                    <TouchableOpacity 
+                        style={styles.navItem}
+                        onPress={() => navigation.navigate('Settings')}
+                    >
+                        <Ionicons name="settings-outline" size={24} color="gray" />
                         <Text style={styles.navLabel}>Settings</Text>
                     </TouchableOpacity>
                 </View>
@@ -500,7 +522,8 @@ export default function MainPage({navigation}) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        height: '100%'
+        height: '100%',
+        backgroundColor: 'transparent',
     },
     centeredView: {
         flex: 1,
@@ -579,15 +602,20 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
         shadowRadius: 4,
+        elevation: 3,
+        zIndex: 1,
     },
     headerTitle: {
         fontSize: 24,
         fontWeight: 'bold',
+        color: '#303F9F',
     },
     headerIcons: {
         flexDirection: 'row',
@@ -599,62 +627,77 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
         marginHorizontal: 20,
-        marginVertical: 30,
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 15,
+        marginVertical: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowRadius: 12,
+        elevation: 5,
         width: '90%',
-        height: '8%',
+        height: 56,
         alignSelf: 'center',
     },
     input: {
         flex: 1,
         marginLeft: 10,
-        fontSize: 15,
-        paddingVertical: 10,
+        fontSize: 16,
+        color: '#2d3748',
+        height: 40,
+        paddingVertical: 0,
+        selectionColor: '#3949AB',
     },
     metricsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-evenly',
+        justifyContent: 'center',
+        alignItems: 'center',
         marginVertical: 10,
         marginBottom: 30,
-        flexWrap: "wrap",
-        alignItems: "flex-end"
+        paddingHorizontal: 16,
+        gap: 12,
     },
     metricCard: {
-        alignItems: 'center',
-        textAlign: 'center',
-        backgroundColor: 'rgb(78, 126, 171)',
-        padding: 5,
-        borderRadius: 10,
-        flex: "auto"
+        borderRadius: 16,
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        margin: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    },
+    smallMetricCard: {
+        width: 90,
+        height: 90,
     },
     primaryMetricCard: {
-        backgroundColor: 'rgb(91, 151, 206)',
-        fontSize: 18,
-        fontWeight: "bold"
+        width: 120,
+        height: 120,
+        elevation: 8,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
     },
     metricNumber: {
-        fontSize: 30,
-        fontWeight: 'bold',
-        color: 'white',
-        textAlign: 'center',
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#303F9F',
+        marginBottom: 4,
     },
     metricLabel: {
-        fontSize: 14,
-        color: 'white',
-        textAlign: 'center'
+        fontSize: 12,
+        color: '#303F9F',
+        textAlign: 'center',
+        fontWeight: '500',
     },
     urgentContainer: {
         flex: 1,
         marginHorizontal: 15,
+        marginBottom: 80,
     },
     urgentLabelContainer: {
         flexDirection: 'row',
@@ -684,26 +727,46 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     detailsButton: {
-        backgroundColor: '#2196F3',
-        paddingVertical: 5,
-        paddingHorizontal: 15,
-        borderRadius: 5,
+        backgroundColor: '#3949AB',
+        paddingVertical: 8,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+        marginTop: 16,
+        alignSelf: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     detailsButtonText: {
         color: 'white',
+        fontWeight: '600',
+        fontSize: 14,
     },
     bottomNav: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
         backgroundColor: 'white',
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#ddd',
+        paddingTop: 12,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 8,
+        borderTopWidth: 0,
+        paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+        marginBottom: -40,
+        paddingHorizontal: 16,
+        width: '100%',
     },
     navItem: {
         alignItems: 'center',
-        // marginBottom: 20,
+        paddingHorizontal: 16,
+        paddingBottom: Platform.OS === 'ios' ? 0 : 0,
     },
     navLabel: {
         fontSize: 12,
@@ -719,14 +782,17 @@ const styles = StyleSheet.create({
     },
     urgentCard: {
         backgroundColor: 'white',
-        borderRadius: 10,
+        borderRadius: 16,
         marginVertical: 10,
-        padding: 10,
+        padding: 16,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        flexDirection: 'col',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 8,
+        transform: [{ translateY: -2 }],
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.8)',
     },
     cardContent: {
         flexDirection: 'row',
@@ -750,7 +816,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         alignItems: 'center',
         marginVertical: 10,
-        marginTop: 20,
+        marginBottom: 30,
     },
     recommendationsButtonText: {
         color: 'white',
@@ -776,17 +842,18 @@ const styles = StyleSheet.create({
     },
     cardHalf: {
         flex: 1,
-        padding: 10,
+        padding: 16,
     },
     cardDivider: {
         width: 1,
-        backgroundColor: '#E0E0E0',
-        marginVertical: 10,
+        backgroundColor: '#e2e8f0',
+        marginVertical: 16,
     },
     cardTitle: {
         fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 5,
+        fontWeight: '600',
+        color: '#2d3748',
+        marginBottom: 6,
     },
     foodTypesText: {
         fontSize: 12,
@@ -797,5 +864,18 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: '#888',
         fontStyle: 'italic',
+    },
+    cardSectionTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 1,
+        color: '#666',
+        marginBottom: 8,
+    },
+    cardOrganizationName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#2d3748',
+        lineHeight: 24,
     },
 });
