@@ -431,39 +431,43 @@ export default function MainPage({navigation}) {
                     visible={recipientModalVisible}
                     onRequestClose={() => setRecipientModalVisible(false)}
                 >
-                    <View style={styles.centeredView}>
+                    <View style={styles.modalOverlay}>
                         <View style={styles.modalView}>
-                            <Text style={styles.modalText}>
-                                How much food storage capacity do you currently have? (in square feet)
+                            <Text style={styles.modalTitle}>Storage Capacity</Text>
+                            <Text style={styles.modalSubtitle}>
+                                Please enter your current food storage capacity
                             </Text>
-                            <TextInput
-                                style={styles.input}
-                                value={capacity}
-                                onChangeText={setCapacity}
-                                keyboardType="numeric"
-                                placeholder="Enter capacity"
-                            />
+
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.capacityInput}
+                                    value={capacity}
+                                    onChangeText={setCapacity}
+                                    placeholder="Enter capacity in lbs"
+                                    keyboardType="numeric"
+                                    placeholderTextColor="#A0AEC0"
+                                />
+                                <Text style={styles.unitText}>lbs</Text>
+                            </View>
+
                             <View style={styles.checkboxContainer}>
                                 <Checkbox
+                                    style={styles.checkbox}
                                     value={isPublicRecipient}
                                     onValueChange={setIsPublicRecipient}
+                                    color={isPublicRecipient ? '#3949AB' : undefined}
                                 />
-                                <Text style={styles.checkboxLabel}>List as public recipient (visible to donors)</Text>
+                                <Text style={styles.checkboxLabel}>
+                                    Make my organization visible to donors
+                                </Text>
                             </View>
-                            <View style={styles.buttonContainer}>
-                                <TouchableOpacity
-                                    style={[styles.button, styles.cancelButton]}
-                                    onPress={() => setRecipientModalVisible(false)}
-                                >
-                                    <Text style={styles.buttonText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.button, styles.submitButton]}
-                                    onPress={handleSubmitRecipient}
-                                >
-                                    <Text style={styles.buttonText}>Submit</Text>
-                                </TouchableOpacity>
-                            </View>
+
+                            <TouchableOpacity
+                                style={styles.submitButton}
+                                onPress={handleSubmitRecipient}
+                            >
+                                <Text style={styles.submitButtonText}>Update Capacity</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </Modal>
@@ -476,41 +480,52 @@ export default function MainPage({navigation}) {
                     visible={donorModalVisible}
                     onRequestClose={() => setDonorModalVisible(false)}
                 >
-                    <View style={styles.centeredView}>
+                    <View style={styles.modalOverlay}>
                         <View style={styles.modalView}>
-                            <Text style={styles.modalText}>Select the types of food you will donate:</Text>
-                            {Object.keys(foodTypes).map((key) => (
-                                <View key={key} style={styles.checkboxContainer}>
-                                    <Checkbox
-                                        value={foodTypes[key]}
-                                        onValueChange={(newValue) =>
-                                            setFoodTypes((prev) => ({...prev, [key]: newValue}))
-                                        }
-                                    />
-                                    <Text style={styles.checkboxLabel}>{key.replace(/([A-Z])/g, ' $1')}</Text>
-                                </View>
-                            ))}
+                            <Text style={styles.modalTitle}>Food Types Available</Text>
+                            <Text style={styles.modalSubtitle}>
+                                Please select the types of food you typically have available
+                            </Text>
+
+                            <View style={styles.foodTypesContainer}>
+                                {Object.entries(foodTypes).map(([key, value]) => (
+                                    <View key={key} style={styles.checkboxContainer}>
+                                        <Checkbox
+                                            style={styles.checkbox}
+                                            value={value}
+                                            onValueChange={(newValue) =>
+                                                setFoodTypes(prev => ({
+                                                    ...prev,
+                                                    [key]: newValue
+                                                }))
+                                            }
+                                            color={value ? '#3949AB' : undefined}
+                                        />
+                                        <Text style={styles.checkboxLabel}>
+                                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+
                             <View style={styles.checkboxContainer}>
                                 <Checkbox
+                                    style={styles.checkbox}
                                     value={isPublicDonor}
                                     onValueChange={setIsPublicDonor}
+                                    color={isPublicDonor ? '#3949AB' : undefined}
                                 />
-                                <Text style={styles.checkboxLabel}>List as public donor (visible to recipients)</Text>
+                                <Text style={styles.checkboxLabel}>
+                                    Make my organization visible to recipients
+                                </Text>
                             </View>
-                            <View style={styles.buttonContainer}>
-                                <TouchableOpacity
-                                    style={[styles.button, styles.cancelButton]}
-                                    onPress={() => setDonorModalVisible(false)}
-                                >
-                                    <Text style={styles.buttonText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.button, styles.submitButton]}
-                                    onPress={handleSubmitDonor}
-                                >
-                                    <Text style={styles.buttonText}>Submit</Text>
-                                </TouchableOpacity>
-                            </View>
+
+                            <TouchableOpacity
+                                style={styles.submitButton}
+                                onPress={handleSubmitDonor}
+                            >
+                                <Text style={styles.submitButtonText}>Update Food Types</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </Modal>
@@ -877,5 +892,85 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#2d3748',
         lineHeight: 24,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#303F9F',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    modalSubtitle: {
+        fontSize: 16,
+        color: '#4A5568',
+        marginBottom: 24,
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F7FAFC',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        paddingHorizontal: 16,
+        marginBottom: 24,
+        width: '100%',
+    },
+    capacityInput: {
+        flex: 1,
+        fontSize: 18,
+        padding: 12,
+        color: '#2D3748',
+    },
+    unitText: {
+        fontSize: 16,
+        color: '#4A5568',
+        fontWeight: '500',
+    },
+    foodTypesContainer: {
+        width: '100%',
+        marginBottom: 16,
+    },
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        width: '100%',
+        paddingHorizontal: 4,
+    },
+    checkbox: {
+        marginRight: 12,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: '#3949AB',
+    },
+    submitButton: {
+        backgroundColor: '#3949AB',
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 12,
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
     },
 });
