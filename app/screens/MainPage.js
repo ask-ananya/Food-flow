@@ -65,7 +65,7 @@ export default function MainPage({navigation}) {
             const data = doc.data();
             donorsList.push({
                 id: doc.id,
-                name: data.organizationName,
+                name: data.name,
             });
         });
         setDonorList(donorsList);
@@ -92,7 +92,7 @@ export default function MainPage({navigation}) {
             const data = doc.data();
             recipientsList.push({
                 id: doc.id,
-                name: data.organizationName,
+                name: data.name,
             });
         });
         setRecipientList(recipientsList);
@@ -153,7 +153,7 @@ export default function MainPage({navigation}) {
 
                 // Add to public recipients with all required fields
                 await setDoc(publicRecipientRef, {
-                    organizationName: userData.organizationName || 'Unknown Recipient',
+                    name: userData.recipientDetails.name || 'Unknown Recipient',
                 });
 
                 console.log('Successfully added to public recipients');
@@ -212,7 +212,7 @@ export default function MainPage({navigation}) {
 
                 // Add to public donors with all required fields
                 await setDoc(publicDonorRef, {
-                    organizationName: userData.organizationName || 'Unknown Donor'
+                    name: userData.donorDetails.name || 'Unknown Donor'
                 });
 
                 console.log('Successfully added to public donors');
@@ -443,11 +443,11 @@ export default function MainPage({navigation}) {
                                     style={styles.capacityInput}
                                     value={capacity}
                                     onChangeText={setCapacity}
-                                    placeholder="Enter capacity in lbs"
+                                    placeholder="Enter capacity in square feet"
                                     keyboardType="numeric"
                                     placeholderTextColor="#A0AEC0"
                                 />
-                                <Text style={styles.unitText}>lbs</Text>
+                                <Text style={styles.unitText}>sq. ft.</Text>
                             </View>
 
                             <View style={styles.checkboxContainer}>
@@ -484,7 +484,7 @@ export default function MainPage({navigation}) {
                         <View style={styles.modalView}>
                             <Text style={styles.modalTitle}>Food Types Available</Text>
                             <Text style={styles.modalSubtitle}>
-                                Please select the types of food you typically have available
+                                Please select the types of food you have available today
                             </Text>
 
                             <View style={styles.foodTypesContainer}>
@@ -502,7 +502,7 @@ export default function MainPage({navigation}) {
                                             color={value ? '#3949AB' : undefined}
                                         />
                                         <Text style={styles.checkboxLabel}>
-                                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                                            {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
                                         </Text>
                                     </View>
                                 ))}

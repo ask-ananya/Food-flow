@@ -2,11 +2,8 @@ best_score = float('-inf')
 food_types = ['dairyFree', 'glutenFree', 'halal', 'kosher', 'vegan', 'vegetarian']
 best_array = []
 perishable_foods = ['dairyFree', 'vegan']
-dairy_threshold = 30
-produce_threshold = 45
-no_refrigeration_penalty = 30  # Slightly higher penalty
 
-def matching_alg(rec_df, donor_df, distanceClient):
+def pairing_alg(rec_df, donor_df, distanceClient):
     for _, donor in donor_df.iterrows():
         best_score = float('-inf')
         don_coords = [donor['donorDetails']['location']['coordinates']['longitude'], donor['donorDetails']['location']['coordinates']['latitude']]
@@ -19,10 +16,10 @@ def matching_alg(rec_df, donor_df, distanceClient):
 
             # Base scoring
             current_score = 100
-            current_score -= (duration * 7)  # Less penalty for distance, as urgency is removed
+            current_score -= (duration * 10)  # Less penalty for distance, as urgency is removed
 
             # Capacity impact (Higher priority now)
-            current_score += (recipient['recipientDetails']['current_capacity'] * 2)
+            current_score += recipient['recipientDetails']['current_capacity']
 
             # Dietary requirements
             food_match_score = 0
@@ -33,33 +30,25 @@ def matching_alg(rec_df, donor_df, distanceClient):
                 if recipient_need and not donor_has:
                     food_match_score -= 10  # Slightly stronger penalty
                 elif recipient_need and donor_has:
-                    food_match_score += 15  # Increased reward for a match
+                    food_match_score += 30  # Increased reward for a match
 
             current_score += food_match_score
 
-            # Perishability penalties
-            if recipient['recipientDetails']['dietaryRestrictions'].get('dairyFree', False) and duration > dairy_threshold:
-                current_score -= 20
-            if recipient['recipientDetails']['dietaryRestrictions'].get('vegan', False) and duration > produce_threshold:
-                current_score -= 10
-
-            # Refrigeration
-            donor_refrigeration = donor['donorDetails'].get('refrigeration', False)
-            if (recipient['recipientDetails']['dietaryRestrictions'].get('dairyFree', False) or recipient['recipientDetails']['dietaryRestrictions'].get('vegan', False)) and not donor_refrigeration and duration > 20:
-                current_score -= no_refrigeration_penalty
-
-            # Quantity matching (Now more important)
-            needed_qty = recipient['recipientDetails'].get('neededQuantity', 0)
-            donor_qty = donor['donorDetails'].get('quantityAvailable', 0)
-            if needed_qty > 0:
-                qty_ratio = min(donor_qty / needed_qty, 1)
-                current_score += qty_ratio * 30  # Increased weight on quantity match
+            # Dairy refrigeration penalties
+            if (donor['donorDetails']['food_types'].get('glutenFree', False) or 
+                donor['donorDetails']['food_types'].get('halal', False) or 
+                donor['donorDetails']['food_types'].get('kosher', False) or 
+                donor['donorDetails']['food_types'].get('vegetarian', False)) and not recipient['recipientDetails'].get('hasRefrigeration', False):
+                current_score -= 200
 
             # Operating hours
             def time_to_minutes(t):
-                h, m = t.split(':')
-                m, k = m.split(' ')[0]
-                return int(h) * 60 + int(m) + (720 if "PM" in k and int(h) != 12 else 0)
+                time_parts = t.strip().split(' ')
+                hm = time_parts[0].split(':')
+                h, m = int(hm[0]), int(hm[1])
+                if len(time_parts) > 1 and time_parts[1] == 'PM' and h != 12:
+                    h += 12
+                return h * 60 + m
 
             donor_start = donor['donorDetails'].get('operatingHours', {}).get('start', '00:00')
             donor_end = donor['donorDetails'].get('operatingHours', {}).get('end', '23:59')
@@ -70,11 +59,11 @@ def matching_alg(rec_df, donor_df, distanceClient):
             donor_end_min = time_to_minutes(donor_end)
             recipient_start_min = time_to_minutes(recipient_start)
             recipient_end_min = time_to_minutes(recipient_end)
-            arrival_time = duration
+            arrival_time = duration  # Arrival time in minutes from now
 
             # Time window check
             if not (donor_start_min <= arrival_time <= donor_end_min and recipient_start_min <= arrival_time <= recipient_end_min):
-                current_score -= 25  # Increased penalty for bad timing
+                current_score -= 125  # Increased penalty for bad timing
 
             if current_score > best_score:
                 best_score = current_score

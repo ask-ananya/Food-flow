@@ -18,7 +18,9 @@ export default function SignUp() {
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
     const [recipientDetails, setRecipientDetails] = useState({
+        name: '', // Add name field
         capacity: '',
+        hasRefrigeration: false,
         location: {
             street: '',
             city: '',
@@ -44,9 +46,8 @@ export default function SignUp() {
         }
     });
     const [donorDetails, setDonorDetails] = useState({
+        name: '', // Add name field
         establishmentType: '',
-        typicalDonations: '',
-        donationFrequency: '',
         location: {
             street: '',
             city: '',
@@ -122,8 +123,7 @@ export default function SignUp() {
         
         if (userType === 'Donor') {
             const { street, city, state, zipCode } = donorDetails.location;
-            if (!donorDetails.establishmentType || !donorDetails.typicalDonations || 
-                !donorDetails.donationFrequency || !street || !city || !state || !zipCode) {
+            if (!donorDetails.establishmentType || !street || !city || !state || !zipCode) {
                 alert("Please fill in all required donor details");
                 return;
             }
@@ -192,6 +192,15 @@ export default function SignUp() {
             <View>
                 <TextInput
                     style={styles.input}
+                    placeholder="Name"
+                    value={recipientDetails.name}
+                    onChangeText={(text) => setRecipientDetails(prev => ({
+                        ...prev,
+                        name: text
+                    }))}
+                />
+                <TextInput
+                    style={styles.input}
                     placeholder="Storage Capacity (warehouse square footage)"
                     keyboardType="numeric"
                     value={recipientDetails.capacity}
@@ -200,6 +209,24 @@ export default function SignUp() {
                         capacity: text
                     }))}
                 />
+
+                <TouchableOpacity 
+                    style={[
+                        styles.refrigerationButton,
+                        recipientDetails.hasRefrigeration && styles.refrigerationButtonActive
+                    ]}
+                    onPress={() => setRecipientDetails(prev => ({
+                        ...prev,
+                        hasRefrigeration: !prev.hasRefrigeration
+                    }))}
+                >
+                    <Text style={[
+                        styles.refrigerationText,
+                        recipientDetails.hasRefrigeration && styles.refrigerationTextActive
+                    ]}>
+                        Refrigeration Available
+                    </Text>
+                </TouchableOpacity>
                 
                 <Text style={styles.sectionTitle}>Location Details:</Text>
                 <TextInput
@@ -348,6 +375,15 @@ export default function SignUp() {
 
         return (
             <View>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Name"
+                    value={donorDetails.name}
+                    onChangeText={(text) => setDonorDetails(prev => ({
+                        ...prev,
+                        name: text
+                    }))}
+                />
                 <Picker
                     style={[styles.input, styles.picker]}
                     selectedValue={donorDetails.establishmentType}
@@ -362,34 +398,6 @@ export default function SignUp() {
                     <Picker.Item label="Grocery Store" value="grocery" />
                     <Picker.Item label="Cafe" value="cafe" />
                     <Picker.Item label="Other" value="other" />
-                </Picker>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Typical Donation Items and Quantities"
-                    multiline
-                    numberOfLines={3}
-                    value={donorDetails.typicalDonations}
-                    onChangeText={(text) => setDonorDetails(prev => ({
-                        ...prev,
-                        typicalDonations: text
-                    }))}
-                />
-
-                <Picker
-                    style={[styles.input, styles.picker]}
-                    selectedValue={donorDetails.donationFrequency}
-                    onValueChange={(value) => setDonorDetails(prev => ({
-                        ...prev,
-                        donationFrequency: value
-                    }))}
-                >
-                    <Picker.Item label="Select Donation Frequency" value="" />
-                    <Picker.Item label="Daily" value="daily" />
-                    <Picker.Item label="Weekly" value="weekly" />
-                    <Picker.Item label="Bi-weekly" value="biweekly" />
-                    <Picker.Item label="Monthly" value="monthly" />
-                    <Picker.Item label="As Available" value="asAvailable" />
                 </Picker>
 
                 <Text style={styles.sectionTitle}>Location Details:</Text>
@@ -664,5 +672,25 @@ const styles = StyleSheet.create({
     },
     zipInput: {
         flex: 2,
+    },
+    refrigerationButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        marginVertical: 8,
+        borderWidth: 1,
+        borderRadius: 4,
+        borderColor: '#2196F3',
+        backgroundColor: '#fff',
+    },
+    refrigerationButtonActive: {
+        backgroundColor: '#2196F3',
+    },
+    refrigerationText: {
+        fontSize: 16,
+        color: '#2196F3',
+    },
+    refrigerationTextActive: {
+        color: '#fff',
     },
 });
