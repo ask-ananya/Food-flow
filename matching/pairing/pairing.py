@@ -1,10 +1,10 @@
 best_score = float('-inf')
 food_types = ['dairyFree', 'glutenFree', 'halal', 'kosher', 'vegan', 'vegetarian']
-best_array = []
 perishable_foods = ['dairyFree', 'vegan']
 
 def pairing_alg(rec_df, donor_df, distanceClient):
-    for _, donor in donor_df.iterrows():
+    best_array = []
+    for i, donor in donor_df.iterrows():
         best_score = float('-inf')
         don_coords = [donor['donorDetails']['location']['coordinates']['longitude'], donor['donorDetails']['location']['coordinates']['latitude']]
 
