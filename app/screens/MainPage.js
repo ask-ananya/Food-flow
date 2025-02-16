@@ -18,6 +18,9 @@ import {doc, collection, getDoc, getDocs, updateDoc, setDoc, deleteDoc} from 'fi
 import {FIREBASE_DB} from '../../FirebaseConfig';
 import Checkbox from 'expo-checkbox';
 import {Ionicons} from '@expo/vector-icons';
+import {ProgressBar} from "react-native-web";
+import * as Progress from 'react-native-progress';
+
 
 export default function MainPage({navigation}) {
     const [isPublicDonor, setIsPublicDonor] = useState(false);
@@ -37,12 +40,15 @@ export default function MainPage({navigation}) {
 
     const [recipientList, setRecipientList] = useState([]);
 
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
         checkUserTypeAndShowPopup();
         checkIfPublicRecipient();
-        loadPublicRecipients();
-        loadPublicDonors();
+        //loadPublicRecipients();
+        //loadPublicDonors();
         checkIfPublicDonor();
+        loadMatches();
     }, []);
 
     const checkIfPublicDonor = async () => {
@@ -181,7 +187,6 @@ export default function MainPage({navigation}) {
         }
     };
 
-
     const handleSubmitDonor = async () => {
         const currentUser = FIREBASE_AUTH.currentUser;
         if (!currentUser) {
@@ -245,6 +250,24 @@ export default function MainPage({navigation}) {
         }
     };
 
+    const loadMatches = async () => {
+        let recs = [], dons = []
+        let data = await (await fetch(`https://matching-79369524935.us-east1.run.app/${FIREBASE_AUTH.currentUser?.uid}`)).json()
+        for (let i = 0; i < data.length; i++) {
+            let recipient = await getDoc(doc(FIREBASE_DB, 'users', data[i][1]));
+            let donor = await getDoc(doc(FIREBASE_DB, 'users', data[i][0]));
+            if (recipient.exists() && donor.exists()) {
+                let r = recipient.data();
+                let d = donor.data();
+                recs.push({id: recipient.id, name: r.recipientDetails.name});
+                dons.push({id: donor.id, name: d.donorDetails.name});
+            }
+        }
+        console.log(recs, dons)
+        setRecipientList(recs);
+        setDonorList(dons);
+        setLoading(false);
+    }
 
     return (
         <View style={{
@@ -344,52 +367,99 @@ export default function MainPage({navigation}) {
                         <View style={{flex: 1}}/>
 
                         <View style={styles.urgentContainer}>
-                            {/* First Card - Combined Recipient and Donor */}
-                            {(recipientList.length > 0 || donorList.length > 0) && (
-                                <View style={styles.urgentCard}>
-                                    <View style={styles.combinedCardContent}>
-                                        {/* Recipient Section */}
-                                        {recipientList.length > 0 && (
-                                            <View style={styles.cardHalf}>
-                                                <Text style={styles.cardSectionTitle}>RECIPIENT</Text>
-                                                <Text style={styles.cardOrganizationName}>{recipientList[0].name}</Text>
-                                            </View>
-                                        )}
-
-                                        {/* Divider */}
-                                        <View style={styles.cardDivider}/>
-
-                                        {/* Donor Section */}
-                                        {donorList.length > 0 && (
-                                            <View style={styles.cardHalf}>
-                                                <Text style={styles.cardSectionTitle}>DONOR</Text>
-                                                <Text style={styles.cardOrganizationName}>{donorList[0].name}</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.detailsButton}
-                                        onPress={() =>
-                                            navigation.navigate('DetailsPage', {
-                                                recipientName: recipientList[0].name,
-                                                recipientId: recipientList[0].id,
-                                                donorName: donorList[0].name,
-                                                donorId: donorList[0].id,
-                                            })
-                                        }
-                                    >
-                                        <Text style={styles.detailsButtonText}>Details</Text>
-                                    </TouchableOpacity>
+                            {loading ? (<>
+                                <View style={{display: "flex", flexDirection: "row", width: "100%", justifyContent: "center"}}>
+                                    <Progress.Circle size={25} indeterminate={true}/>
+                                    <Text>Getting matches...</Text>
                                 </View>
-                            )}
+                            </>) : (
+                                <>
+                                    {/* First Card - Combined Recipient and Donor */}
+                                    {(recipientList.length > 0 || donorList.length > 0) && (
+                                        <View style={styles.urgentCard}>
+                                            <View style={styles.combinedCardContent}>
+                                                {/* Recipient Section */}
+                                                {recipientList.length > 0 && (
+                                                    <View style={styles.cardHalf}>
+                                                        <Text style={styles.cardSectionTitle}>RECIPIENT</Text>
+                                                        <Text style={styles.cardOrganizationName}>{recipientList[0].name}</Text>
+                                                    </View>
+                                                )}
 
-                            {/* View More Recommendations Button */}
-                            {recipientList.length > 2 && (
-                                <TouchableOpacity style={styles.recommendationsButton}>
-                                    <Text style={styles.recommendationsButtonText}>
-                                        View {recipientList.length - 2} more recommendations...
-                                    </Text>
-                                </TouchableOpacity>
+                                                {/* Divider */}
+                                                <View style={styles.cardDivider}/>
+
+                                                {/* Donor Section */}
+                                                {donorList.length > 0 && (
+                                                    <View style={styles.cardHalf}>
+                                                        <Text style={styles.cardSectionTitle}>DONOR</Text>
+                                                        <Text style={styles.cardOrganizationName}>{donorList[0].name}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        recipientName: recipientList[0].name,
+                                                        recipientId: recipientList[0].id,
+                                                        donorName: donorList[0].name,
+                                                        donorId: donorList[0].id,
+                                                    })
+                                                }
+                                            >
+                                                <Text style={styles.detailsButtonText}>Details</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+                                    {/* First Card - Combined Recipient and Donor */}
+                                    {(recipientList.length > 1 || donorList.length > 1) && (
+                                        <View style={styles.urgentCard}>
+                                            <View style={styles.combinedCardContent}>
+                                                {/* Recipient Section */}
+                                                {recipientList.length > 0 && (
+                                                    <View style={styles.cardHalf}>
+                                                        <Text style={styles.cardSectionTitle}>RECIPIENT</Text>
+                                                        <Text style={styles.cardOrganizationName}>{recipientList[1].name}</Text>
+                                                    </View>
+                                                )}
+
+                                                {/* Divider */}
+                                                <View style={styles.cardDivider}/>
+
+                                                {/* Donor Section */}
+                                                {donorList.length > 0 && (
+                                                    <View style={styles.cardHalf}>
+                                                        <Text style={styles.cardSectionTitle}>DONOR</Text>
+                                                        <Text style={styles.cardOrganizationName}>{donorList[1].name}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        recipientName: recipientList[1].name,
+                                                        recipientId: recipientList[1].id,
+                                                        donorName: donorList[1].name,
+                                                        donorId: donorList[1].id,
+                                                    })
+                                                }
+                                            >
+                                                <Text style={styles.detailsButtonText}>Details</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+
+                                    {/* View More Recommendations Button */}
+                                    {recipientList.length > 2 && (
+                                        <TouchableOpacity style={styles.recommendationsButton}>
+                                            <Text style={styles.recommendationsButtonText}>
+                                                View {recipientList.length - 2} more recommendations...
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </>
                             )}
                         </View>
                     </ScrollView>
@@ -567,11 +637,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 16,
     },
-    checkboxContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 5,
-    },
     checkboxLabel: {
         marginLeft: 10,
         fontSize: 16,
@@ -600,9 +665,6 @@ const styles = StyleSheet.create({
         padding: 10,
         elevation: 2,
         minWidth: 100,
-    },
-    submitButton: {
-        backgroundColor: '#2196F3',
     },
     cancelButton: {
         backgroundColor: '#ff4444',
@@ -638,24 +700,6 @@ const styles = StyleSheet.create({
     },
     icon: {
         marginLeft: 15,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        marginHorizontal: 20,
-        marginVertical: 24,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 5,
-        width: '90%',
-        height: 56,
-        alignSelf: 'center',
     },
     input: {
         flex: 1,

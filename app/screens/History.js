@@ -146,7 +146,7 @@ export default function History({ navigation }) {
                     <Ionicons name="arrow-back" size={24} color="#303F9F" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>History</Text>
-                <View style={{ width: 24 }} /> {/* Empty view for balanced spacing */}
+                <View style={{ width: 24 }} />
             </View>
 
             <ScrollView style={styles.container}>

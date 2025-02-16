@@ -129,7 +129,7 @@ export default function Settings({ navigation }) {
                         <Ionicons name="arrow-back" size={24} color="#303F9F" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Settings</Text>
-                    <View style={{ width: 24 }} /> {/* Keeps header centered */}
+                    <View style={{ width: 24 }} />
                 </View>
 
                 <View style={styles.card}>

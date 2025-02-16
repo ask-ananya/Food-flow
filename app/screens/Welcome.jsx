@@ -9,7 +9,11 @@ import {useNavigation} from '@react-navigation/native';
 export default function WelcomeScreen() {
     const navigation = useNavigation();
 
-    const currentUser = FIREBASE_AUTH.currentUser;
+    const [currentUser, setCurrentUser] = useState(FIREBASE_AUTH.currentUser);
+
+    FIREBASE_AUTH.onAuthStateChanged((user) => {
+        setCurrentUser(user);
+    })
 
     return (
         <SafeAreaView style={styles.container}>
