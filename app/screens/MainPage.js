@@ -118,6 +118,7 @@ export default function MainPage({navigation}) {
 
             if (userDoc.exists()) {
                 const usertype = userDoc.data().userType;
+                console.log("User type:", usertype)
                 setUserType(usertype);
 
                 if (userType === 'Recipient') {
@@ -369,7 +370,7 @@ export default function MainPage({navigation}) {
                         {/* Space Between Sections */}
                         <View style={{flex: 1}}/>
 
-                        {userType === "Invididual" ? (
+                        {userType === "Individual" ? (
                             <View style={styles.urgentContainer}>
                                 {loading ? (<>
                                     <View style={{display: "flex", flexDirection: "row", width: "100%", justifyContent: "center"}}>
