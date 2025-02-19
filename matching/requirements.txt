@@ -5,3 +5,4 @@ pandas
 openrouteservice
 numpy
 scikit-learn>=1.0.0
+flask_cors

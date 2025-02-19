@@ -2,6 +2,7 @@
 import os
 import sys
 from flask import Flask, jsonify
+from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore
 import pandas as pd
@@ -14,6 +15,8 @@ from pairing.pairing import pairing_alg
 from knn.knn import knn_pred
 
 matching = Flask(__name__)
+
+CORS(matching)
 
 # Firestore credentials
 cred = credentials.Certificate("foodflowcertificate.json")
