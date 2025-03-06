@@ -37,14 +37,16 @@ def index(individual_id: str):
         # Distance Client
         distanceClient = openrouteservice.Client(key='5b3ce3597851110001cf624832fdc07e4faf477fa76a70c083547c65')
 
-        public_recipients = {doc.id for doc in docs if doc.user_type == "recipient" and doc.public}
-        public_donors = {doc.id for doc in docs if doc.user_type == "donor" and doc.public}
+        # Fix: Use dictionary access instead of dot notation
+        public_recipients = {doc['id'] for doc in docs if doc['user_type'] == "recipient" and doc['public']}
+        public_donors = {doc['id'] for doc in docs if doc['user_type'] == "donor" and doc['public']}
 
-        # Convert Firebase documents to a DataFrame
+        # Convert Supabase documents to a DataFrame
         data = []
         for doc in docs:
-            doc_dict = doc.to_dict()
-            doc_dict['id'] = doc.id
+            # Remove to_dict() since doc is already a dictionary
+            doc_dict = doc
+            doc_dict['id'] = doc['id']
             # Replace None values with default placeholders
             cleaned_dict = {k: (v if v is not None else "N/A") for k, v in doc_dict.items()}
             data.append(cleaned_dict)

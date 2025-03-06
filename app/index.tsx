@@ -20,9 +20,11 @@ const Welcome = () => {
     });
   }, []);
 
-  if (session && session.user) {
-    router.push("/home");
-  }
+  useEffect(() => {
+    if (session && session.user) {
+      router.push("/home");
+    }
+  }, [session, router]);
 
   return (
     <SafeAreaView className="flex-1 items-center justify-center">

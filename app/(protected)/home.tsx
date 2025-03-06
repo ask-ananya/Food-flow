@@ -5,7 +5,6 @@ import {
   Modal,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Platform,
   ScrollView,
   Image,
@@ -15,7 +14,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Ionicons } from "@expo/vector-icons";
-import { ProgressBar } from "react-native-web";
 import * as Progress from "react-native-progress";
 import { router, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
@@ -39,6 +37,7 @@ export default function MainPage() {
   const [recipientList, setRecipientList] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const [userType, setUserType] = useState(null);
 
@@ -122,33 +121,34 @@ export default function MainPage() {
   };
 
   const checkUserTypeAndShowPopup = async () => {
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!authUser) return;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .single();
-
-    if (error) throw error;
-
     try {
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authUser) return;
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error) throw error;
+
       const usertype = data.user_type;
-      console.log("User type:", usertype);
       setUserType(usertype);
 
-      if (userType === "recipient") {
+      if (usertype === "recipient") {
         setRecipientModalVisible(true);
-      } else if (userType === "donor") {
+      } else if (usertype === "donor") {
         setDonorModalVisible(true);
       }
     } catch (error) {
       console.error("Error checking user type:", error);
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -220,15 +220,15 @@ export default function MainPage() {
     if (error) throw error;
 
     try {
-      // First update user details
+      // Update user details
       var updateObj = data.details;
-      updateObj["food_types"] = Number(capacity);
+      updateObj["food_types"] = foodTypes; // Change from capacity to foodTypes
       updateObj["last_updated"] = new Date().toISOString();
       updateObj["public"] = isPublicDonor;
 
       const { error } = await supabase
         .from("users")
-        .update(updateObj)
+        .update({ details: updateObj }) // Wrap updateObj in details field
         .eq("id", authUser.id);
 
       if (error) throw error;
@@ -242,6 +242,7 @@ export default function MainPage() {
         vegan: false,
         vegetarian: false,
       });
+      await loadPublicDonors(); // Reload donor list after update
     } catch (error) {
       console.error("Detailed error:", {
         code: error.code,
@@ -310,48 +311,44 @@ export default function MainPage() {
   };
 
   return (
-    <View
-      style={{
-        backgroundColor: "white",
-        ...styles.container,
-      }}
-    >
+    <View className="flex-1 bg-white">
       <LinearGradient
         colors={["#E8EAF6", "#C5CAE9"]}
-        style={styles.background}
+        className="absolute left-0 right-0 top-0 w-full h-full"
       />
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView className="flex-1">
         <LinearGradient
           colors={["#ffffff", "#E8EAF6"]}
-          style={styles.background}
+          className="absolute left-0 right-0 top-0 w-full h-full"
         />
         {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>FoodFlow</Text>
-          <View style={styles.headerIcons}>
+        <View className="flex-row justify-between items-center p-5 bg-white/95 border-b border-b-[#E2E8F0] shadow-sm z-10">
+          <Text className="text-2xl font-bold text-[#303F9F]">FoodFlow</Text>
+          <View className="flex-row items-center">
             <Ionicons
               name="person-circle-outline"
               size={30}
               color="black"
-              style={styles.icon}
+              className="ml-4"
             />
             <Ionicons
               name="notifications-outline"
               size={24}
               color="black"
-              style={styles.icon}
+              className="ml-4"
             />
           </View>
         </View>
 
-        <View style={{ flex: 1, padding: 16, backgroundColor: "" }}>
+        <View className="flex-1 p-4">
           {/* Input Section */}
-          <View style={styles.inputContainer}>
+          <View className="flex-row items-center bg-[#F7FAFC] rounded-xl border border-[#E2E8F0] px-4">
             <Ionicons name="location-outline" size={20} color="gray" />
             <TextInput
-              style={styles.input}
+              className="flex-1 ml-2.5 text-base text-[#2d3748] h-10"
               placeholder="Make a donation today..."
               placeholderTextColor="gray"
+              selectionColor="#3949AB"
             />
           </View>
 
@@ -363,78 +360,52 @@ export default function MainPage() {
             }}
           >
             {/* Metrics Section */}
-            <View style={styles.metricsContainer}>
-              <View style={[styles.metricCard, styles.smallMetricCard]}>
+            <View className="flex-row justify-center items-center my-2.5 mb-8 px-4 gap-3">
+              <View className="rounded-xl shadow-lg shadow-black/15 m-2 bg-white/90">
                 <LinearGradient
                   colors={["#E8EAF6", "#C5CAE9"]}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 16,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: 12,
-                  }}
+                  className="w-full h-full rounded-xl justify-center items-center p-3 w-[90px] h-[90px]"
                 >
-                  <Text style={styles.metricNumber}>0</Text>
-                  <Text style={styles.metricLabel}>Donation{"\n"}Spots</Text>
+                  <Text className="text-2xl font-bold text-[#303F9F] mb-1">0</Text>
+                  <Text className="text-xs text-[#303F9F] text-center font-medium">
+                    Donation{"\n"}Spots
+                  </Text>
                 </LinearGradient>
               </View>
-              <View style={[styles.metricCard, styles.primaryMetricCard]}>
+              <View className="rounded-xl shadow-lg shadow-black/15 m-2 bg-white/90">
                 <LinearGradient
                   colors={["#303F9F", "#3949AB"]}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 16,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: 16,
-                  }}
+                  className="w-full h-full rounded-xl justify-center items-center p-4 w-[120px] h-[120px]"
                 >
-                  <Text style={{ ...styles.metricNumber, color: "white" }}>
-                    0
-                  </Text>
-                  <Text style={{ ...styles.metricLabel, color: "white" }}>
+                  <Text className="text-2xl font-bold text-white mb-1">0</Text>
+                  <Text className="text-xs text-white text-center font-medium">
                     Total Donations
                   </Text>
                 </LinearGradient>
               </View>
-              <View style={[styles.metricCard, styles.smallMetricCard]}>
+              <View className="rounded-xl shadow-lg shadow-black/15 m-2 bg-white/90">
                 <LinearGradient
                   colors={["#E8EAF6", "#C5CAE9"]}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 16,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: 12,
-                  }}
+                  className="w-full h-full rounded-xl justify-center items-center p-3 w-[90px] h-[90px]"
                 >
-                  <Text style={styles.metricNumber}>0</Text>
-                  <Text style={styles.metricLabel}>Drivers{"\n"}Nearby</Text>
+                  <Text className="text-2xl font-bold text-[#303F9F] mb-1">0</Text>
+                  <Text className="text-xs text-[#303F9F] text-center font-medium">
+                    Drivers{"\n"}Nearby
+                  </Text>
                 </LinearGradient>
               </View>
             </View>
 
             {/* Space Between Sections */}
-            <View style={{ flex: 1 }} />
+            <View className="flex-1" />
 
             {userType != null ? (
               <>
                 {userType === "individual" ? (
-                  <View style={styles.urgentContainer}>
+                  <View className="flex-1 mx-4 mb-20">
                     {loading ? (
                       <>
-                        <View
-                          style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            width: "100%",
-                            justifyContent: "center",
-                          }}
-                        >
+                        <View className="flex flex-row w-full justify-center">
                           <Progress.Circle size={25} indeterminate={true} />
                           <Text>Getting matches...</Text>
                         </View>
@@ -443,37 +414,37 @@ export default function MainPage() {
                       <>
                         {/* First Card - Combined Recipient and Donor */}
                         {(recipientList.length > 0 || donorList.length > 0) && (
-                          <View style={styles.urgentCard}>
-                            <View style={styles.combinedCardContent}>
+                          <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80">
+                            <View className="flex-row rounded-xl overflow-hidden">
                               {/* Recipient Section */}
                               {recipientList.length > 0 && (
-                                <View style={styles.cardHalf}>
-                                  <Text style={styles.cardSectionTitle}>
+                                <View className="flex-1 p-4">
+                                  <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                                     RECIPIENT
                                   </Text>
-                                  <Text style={styles.cardOrganizationName}>
+                                  <Text className="text-base font-semibold text-[#2d3748] leading-6">
                                     {recipientList[0].name}
                                   </Text>
                                 </View>
                               )}
 
                               {/* Divider */}
-                              <View style={styles.cardDivider} />
+                              <View className="w-px bg-[#e2e8f0] my-4" />
 
                               {/* Donor Section */}
                               {donorList.length > 0 && (
-                                <View style={styles.cardHalf}>
-                                  <Text style={styles.cardSectionTitle}>
+                                <View className="flex-1 p-4">
+                                  <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                                     DONOR
                                   </Text>
-                                  <Text style={styles.cardOrganizationName}>
+                                  <Text className="text-base font-semibold text-[#2d3748] leading-6">
                                     {donorList[0].name}
                                   </Text>
                                 </View>
                               )}
                             </View>
                             <TouchableOpacity
-                              style={styles.detailsButton}
+                              className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
                               onPress={() =>
                                 router.push({
                                   pathname: "/details",
@@ -486,7 +457,7 @@ export default function MainPage() {
                                 })
                               }
                             >
-                              <Text style={styles.detailsButtonText}>
+                              <Text className="text-white font-semibold text-sm">
                                 Details
                               </Text>
                             </TouchableOpacity>
@@ -494,37 +465,37 @@ export default function MainPage() {
                         )}
                         {/* First Card - Combined Recipient and Donor */}
                         {(recipientList.length > 1 || donorList.length > 1) && (
-                          <View style={styles.urgentCard}>
-                            <View style={styles.combinedCardContent}>
+                          <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80">
+                            <View className="flex-row rounded-xl overflow-hidden">
                               {/* Recipient Section */}
                               {recipientList.length > 0 && (
-                                <View style={styles.cardHalf}>
-                                  <Text style={styles.cardSectionTitle}>
+                                <View className="flex-1 p-4">
+                                  <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                                     RECIPIENT
                                   </Text>
-                                  <Text style={styles.cardOrganizationName}>
+                                  <Text className="text-base font-semibold text-[#2d3748] leading-6">
                                     {recipientList[1].name}
                                   </Text>
                                 </View>
                               )}
 
                               {/* Divider */}
-                              <View style={styles.cardDivider} />
+                              <View className="w-px bg-[#e2e8f0] my-4" />
 
                               {/* Donor Section */}
                               {donorList.length > 0 && (
-                                <View style={styles.cardHalf}>
-                                  <Text style={styles.cardSectionTitle}>
+                                <View className="flex-1 p-4">
+                                  <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                                     DONOR
                                   </Text>
-                                  <Text style={styles.cardOrganizationName}>
+                                  <Text className="text-base font-semibold text-[#2d3748] leading-6">
                                     {donorList[1].name}
                                   </Text>
                                 </View>
                               )}
                             </View>
                             <TouchableOpacity
-                              style={styles.detailsButton}
+                              className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
                               onPress={() =>
                                 router.push({
                                   pathname: "/details",
@@ -537,7 +508,7 @@ export default function MainPage() {
                                 })
                               }
                             >
-                              <Text style={styles.detailsButtonText}>
+                              <Text className="text-white font-semibold text-sm">
                                 Details
                               </Text>
                             </TouchableOpacity>
@@ -546,10 +517,8 @@ export default function MainPage() {
 
                         {/* View More Recommendations Button */}
                         {recipientList.length > 2 && (
-                          <TouchableOpacity
-                            style={styles.recommendationsButton}
-                          >
-                            <Text style={styles.recommendationsButtonText}>
+                          <TouchableOpacity className="bg-[#4A4A8A] py-2.5 px-5 rounded items-center my-2.5 mb-8">
+                            <Text className="text-white font-bold text-sm">
                               View {recipientList.length - 2} more
                               recommendations...
                             </Text>
@@ -560,20 +529,20 @@ export default function MainPage() {
                   </View>
                 ) : (
                   <>
-                    <View style={styles.urgentCard}>
-                      <View style={styles.combinedCardContent}>
+                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
+                      <View className="flex-row rounded-xl overflow-hidden">
                         {/* Recipient Section */}
-                        <View style={styles.cardHalf}>
-                          <Text style={styles.cardSectionTitle}>
+                        <View className="flex-1 p-4">
+                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                             {userType === "donor" ? "Recipient" : "Donor"}
                           </Text>
-                          <Text style={styles.cardOrganizationName}>
+                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
                             Edison Pepper Farms
                           </Text>
                         </View>
                       </View>
                       <TouchableOpacity
-                        style={styles.detailsButton}
+                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
                         onPress={() =>
                           router.push({
                             pathname: "/details",
@@ -586,23 +555,23 @@ export default function MainPage() {
                           })
                         }
                       >
-                        <Text style={styles.detailsButtonText}>Details</Text>
+                        <Text className="text-white font-semibold text-sm">Details</Text>
                       </TouchableOpacity>
                     </View>
-                    <View style={styles.urgentCard}>
-                      <View style={styles.combinedCardContent}>
+                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
+                      <View className="flex-row rounded-xl overflow-hidden">
                         {/* Recipient Section */}
-                        <View style={styles.cardHalf}>
-                          <Text style={styles.cardSectionTitle}>
+                        <View className="flex-1 p-4">
+                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                             {userType === "donor" ? "Recipient" : "Donor"}
                           </Text>
-                          <Text style={styles.cardOrganizationName}>
+                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
                             Edison Pepper Farms
                           </Text>
                         </View>
                       </View>
                       <TouchableOpacity
-                        style={styles.detailsButton}
+                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
                         onPress={() =>
                           router.push({
                             pathname: "/details",
@@ -615,23 +584,23 @@ export default function MainPage() {
                           })
                         }
                       >
-                        <Text style={styles.detailsButtonText}>Details</Text>
+                        <Text className="text-white font-semibold text-sm">Details</Text>
                       </TouchableOpacity>
                     </View>
-                    <View style={styles.urgentCard}>
-                      <View style={styles.combinedCardContent}>
+                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
+                      <View className="flex-row rounded-xl overflow-hidden">
                         {/* Recipient Section */}
-                        <View style={styles.cardHalf}>
-                          <Text style={styles.cardSectionTitle}>
+                        <View className="flex-1 p-4">
+                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                             {userType === "donor" ? "Recipient" : "Donor"}
                           </Text>
-                          <Text style={styles.cardOrganizationName}>
+                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
                             Edison Pepper Farms
                           </Text>
                         </View>
                       </View>
                       <TouchableOpacity
-                        style={styles.detailsButton}
+                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
                         onPress={() =>
                           router.push({
                             pathname: "/details",
@@ -644,23 +613,23 @@ export default function MainPage() {
                           })
                         }
                       >
-                        <Text style={styles.detailsButtonText}>Details</Text>
+                        <Text className="text-white font-semibold text-sm">Details</Text>
                       </TouchableOpacity>
                     </View>
-                    <View style={styles.urgentCard}>
-                      <View style={styles.combinedCardContent}>
+                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
+                      <View className="flex-row rounded-xl overflow-hidden">
                         {/* Recipient Section */}
-                        <View style={styles.cardHalf}>
-                          <Text style={styles.cardSectionTitle}>
+                        <View className="flex-1 p-4">
+                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
                             {userType === "donor" ? "Recipient" : "Donor"}
                           </Text>
-                          <Text style={styles.cardOrganizationName}>
+                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
                             Edison Pepper Farms
                           </Text>
                         </View>
                       </View>
                       <TouchableOpacity
-                        style={styles.detailsButton}
+                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
                         onPress={() =>
                           router.push({
                             pathname: "/details",
@@ -673,21 +642,14 @@ export default function MainPage() {
                           })
                         }
                       >
-                        <Text style={styles.detailsButtonText}>Details</Text>
+                        <Text className="text-white font-semibold text-sm">Details</Text>
                       </TouchableOpacity>
                     </View>
                   </>
                 )}
               </>
             ) : (
-              <View
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  width: "100%",
-                  justifyContent: "center",
-                }}
-              >
+              <View className="flex flex-row w-full justify-center">
                 <Progress.Circle size={25} indeterminate={true} />
                 <Text>Loading...</Text>
               </View>
@@ -702,42 +664,46 @@ export default function MainPage() {
           visible={recipientModalVisible}
           onRequestClose={() => setRecipientModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalView}>
-              <Text style={styles.modalTitle}>Storage Capacity</Text>
-              <Text style={styles.modalSubtitle}>
+          <View className="flex-1 bg-black/50 justify-center items-center">
+            <View className="m-5 bg-white rounded-2xl p-8 items-center shadow-md shadow-black/25 w-4/5">
+              <Text className="text-2xl font-bold text-[#303F9F] mb-2 text-center">
+                Storage Capacity
+              </Text>
+              <Text className="text-base text-[#4A5568] mb-6 text-center leading-5">
                 Please enter your current food storage capacity
               </Text>
 
-              <View style={styles.inputContainer}>
+              <View className="flex-row items-center bg-[#F7FAFC] rounded-xl border border-[#E2E8F0] px-4 mb-6 w-full">
                 <TextInput
-                  style={styles.capacityInput}
+                  className="flex-1 text-lg p-3 text-[#2D3748]"
                   value={capacity}
                   onChangeText={setCapacity}
                   placeholder="Enter capacity in square feet"
                   keyboardType="numeric"
                   placeholderTextColor="#A0AEC0"
                 />
-                <Text style={styles.unitText}>sq. ft.</Text>
+                <Text className="text-base text-[#4A5568] font-medium">sq. ft.</Text>
               </View>
 
-              <View style={styles.checkboxContainer}>
+              <View className="flex-row items-center mb-3 w-full px-1">
                 <Checkbox
-                  style={styles.checkbox}
-                  value={isPublicRecipient}
-                  onValueChange={setIsPublicRecipient}
+                  className="mr-3 rounded border-2 border-[#3949AB]"
+                  checked={isPublicRecipient}
+                  onValueChange={(checked) => setIsPublicRecipient(checked)} // Changed from onCheckedChange
                   color={isPublicRecipient ? "#3949AB" : undefined}
                 />
-                <Text style={styles.checkboxLabel}>
+                <Text className="text-base text-[#4A5568]">
                   Make my organization visible to donors
                 </Text>
               </View>
 
               <TouchableOpacity
-                style={styles.submitButton}
+                className="bg-[#3949AB] py-3.5 px-8 rounded-xl w-full shadow shadow-black/10"
                 onPress={handleSubmitRecipient}
               >
-                <Text style={styles.submitButtonText}>Update Capacity</Text>
+                <Text className="text-white text-base font-semibold text-center">
+                  Update Capacity
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -750,28 +716,30 @@ export default function MainPage() {
           visible={donorModalVisible}
           onRequestClose={() => setDonorModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalView}>
-              <Text style={styles.modalTitle}>Food Types Available</Text>
-              <Text style={styles.modalSubtitle}>
+          <View className="flex-1 bg-black/50 justify-center items-center">
+            <View className="m-5 bg-white rounded-2xl p-8 items-center shadow-md shadow-black/25 w-4/5">
+              <Text className="text-2xl font-bold text-[#303F9F] mb-2 text-center">
+                Food Types Available
+              </Text>
+              <Text className="text-base text-[#4A5568] mb-6 text-center leading-5">
                 Please select the types of food you have available today
               </Text>
 
-              <View style={styles.foodTypesContainer}>
+              <View className="w-full mb-4">
                 {Object.entries(foodTypes).map(([key, value]) => (
-                  <View key={key} style={styles.checkboxContainer}>
+                  <View key={key} className="flex-row items-center mb-3 w-full px-1">
                     <Checkbox
-                      style={styles.checkbox}
-                      value={value}
-                      onValueChange={(newValue) =>
+                      className="mr-3 rounded border-2 border-[#3949AB]"
+                      checked={value}
+                      onValueChange={(checked) =>
                         setFoodTypes((prev) => ({
                           ...prev,
-                          [key]: newValue,
+                          [key]: checked,
                         }))
                       }
                       color={value ? "#3949AB" : undefined}
                     />
-                    <Text style={styles.checkboxLabel}>
+                    <Text className="text-base text-[#4A5568]">
                       {key.charAt(0).toUpperCase() +
                         key.slice(1).replace(/([A-Z])/g, " $1")}
                     </Text>
@@ -779,23 +747,25 @@ export default function MainPage() {
                 ))}
               </View>
 
-              <View style={styles.checkboxContainer}>
+              <View className="flex-row items-center mb-3 w-full px-1">
                 <Checkbox
-                  style={styles.checkbox}
-                  value={isPublicDonor}
-                  onValueChange={setIsPublicDonor}
+                  className="mr-3 rounded border-2 border-[#3949AB]"
+                  checked={isPublicDonor}
+                  onValueChange={(checked) => setIsPublicDonor(checked)}
                   color={isPublicDonor ? "#3949AB" : undefined}
                 />
-                <Text style={styles.checkboxLabel}>
+                <Text className="text-base text-[#4A5568]">
                   Make my organization visible to recipients
                 </Text>
               </View>
 
               <TouchableOpacity
-                style={styles.submitButton}
+                className="bg-indigo-600 py-3.5 px-8 rounded-xl w-full shadow-sm shadow-black/10"
                 onPress={handleSubmitDonor}
               >
-                <Text style={styles.submitButtonText}>Update Food Types</Text>
+                <Text className="text-white text-base font-semibold text-center">
+                  Update Food Types
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -804,418 +774,3 @@ export default function MainPage() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    height: "100%",
-    backgroundColor: "transparent",
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: "80%",
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontSize: 16,
-  },
-  checkboxLabel: {
-    marginLeft: 10,
-    fontSize: 16,
-  },
-  circleCard: {
-    width: 150, // Adjust the size as needed
-    height: 150, // Adjust the size as needed
-    borderRadius: 75, // Half of the width/height to make it a circle
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  smallCircleCard: {
-    width: 100, // Adjust the size as needed
-    height: 100, // Adjust the size as needed
-    borderRadius: 50, // Half of the width/height to make it a circle
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  button: {
-    borderRadius: 5,
-    padding: 10,
-    elevation: 2,
-    minWidth: 100,
-  },
-  cancelButton: {
-    backgroundColor: "#ff4444",
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-    zIndex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#303F9F",
-  },
-  headerIcons: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  icon: {
-    marginLeft: 15,
-  },
-  input: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
-    color: "#2d3748",
-    height: 40,
-    paddingVertical: 0,
-    selectionColor: "#3949AB",
-  },
-  metricsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 10,
-    marginBottom: 30,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  metricCard: {
-    borderRadius: 16,
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    margin: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-  },
-  smallMetricCard: {
-    width: 90,
-    height: 90,
-  },
-  primaryMetricCard: {
-    width: 120,
-    height: 120,
-    elevation: 8,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-  },
-  metricNumber: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#303F9F",
-    marginBottom: 4,
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: "#303F9F",
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  urgentContainer: {
-    flex: 1,
-    marginHorizontal: 15,
-    marginBottom: 80,
-  },
-  urgentLabelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-    marginLeft: -15,
-  },
-  urgentLabel: {
-    color: "red",
-    fontWeight: "bold",
-    marginLeft: 5,
-  },
-  urgentImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 10,
-  },
-  urgentTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginVertical: 5,
-  },
-  cardActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  detailsButton: {
-    backgroundColor: "#3949AB",
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 16,
-    alignSelf: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  detailsButtonText: {
-    color: "white",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  bottomNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: "white",
-    paddingTop: 12,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 8,
-    borderTopWidth: 0,
-    paddingBottom: Platform.OS === "ios" ? 34 : 12,
-    marginBottom: -40,
-    paddingHorizontal: 16,
-    width: "100%",
-  },
-  navItem: {
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: Platform.OS === "ios" ? 0 : 0,
-  },
-  navLabel: {
-    fontSize: 12,
-    color: "gray",
-  },
-  background: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
-  },
-  urgentCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    marginVertical: 10,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-    transform: [{ translateY: -2 }],
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.8)",
-  },
-  cardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  urgentImageLeft: {
-    width: 160,
-    height: 80,
-    flex: "auto",
-    borderRadius: 10,
-    marginRight: 10,
-  },
-  cardText: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  recommendationsButton: {
-    backgroundColor: "#4A4A8A",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    alignItems: "center",
-    marginVertical: 10,
-    marginBottom: 30,
-  },
-  recommendationsButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  metricBackground: {
-    width: 100,
-    height: 100,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "red",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  combinedCardContent: {
-    flexDirection: "row",
-    borderRadius: 15,
-    overflow: "hidden",
-  },
-  cardHalf: {
-    flex: 1,
-    padding: 16,
-  },
-  cardDivider: {
-    width: 1,
-    backgroundColor: "#e2e8f0",
-    marginVertical: 16,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2d3748",
-    marginBottom: 6,
-  },
-  foodTypesText: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 5,
-  },
-  lastUpdatedText: {
-    fontSize: 11,
-    color: "#888",
-    fontStyle: "italic",
-  },
-  cardSectionTitle: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1,
-    color: "#666",
-    marginBottom: 8,
-  },
-  cardOrganizationName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2d3748",
-    lineHeight: 24,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#303F9F",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  modalSubtitle: {
-    fontSize: 16,
-    color: "#4A5568",
-    marginBottom: 24,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F7FAFC",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    paddingHorizontal: 16,
-    marginBottom: 24,
-    width: "100%",
-  },
-  capacityInput: {
-    flex: 1,
-    fontSize: 18,
-    padding: 12,
-    color: "#2D3748",
-  },
-  unitText: {
-    fontSize: 16,
-    color: "#4A5568",
-    fontWeight: "500",
-  },
-  foodTypesContainer: {
-    width: "100%",
-    marginBottom: 16,
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    width: "100%",
-    paddingHorizontal: 4,
-  },
-  checkbox: {
-    marginRight: 12,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: "#3949AB",
-  },
-  submitButton: {
-    backgroundColor: "#3949AB",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  submitButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-});

@@ -17,7 +17,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { OperatingHoursSection } from "./operating-hours";
 import { supabase } from "@/lib/supabase";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 
 // Common schemas
 
@@ -157,6 +157,7 @@ const defaultOperatingHours = {
 export default function SignUpScreen() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const router = useRouter();
 
   const {
     control,
@@ -307,6 +308,7 @@ export default function SignUpScreen() {
       Alert.alert("Error inserting user data", dbError.message);
     } else {
       console.log("User data inserted successfully");
+      router.push("/sign-in"); // Navigate to sign-in page
     }
   };
 
@@ -444,7 +446,7 @@ export default function SignUpScreen() {
           render={({ field: { onChange, value } }) => (
             <TextInput
               className="p-3 border rounded-lg"
-              placeholder="Number of people served"
+              placeholder="Square Footage"
               value={value}
               onChangeText={onChange}
               keyboardType="numeric"
