@@ -18,14 +18,51 @@ import * as Progress from "react-native-progress";
 import { router, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
+interface FoodTypes {
+  dairyFree: boolean;
+  glutenFree: boolean;
+  halal: boolean;
+  kosher: boolean;
+  vegan: boolean;
+  vegetarian: boolean;
+}
+
+interface Location {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+interface UserDetails {
+  name: string;
+  location: Location;
+  current_capacity?: number;
+  food_types?: FoodTypes;
+  last_updated?: string;
+  public?: boolean;
+}
+
+interface User {
+  id: string;
+  email: string;
+  user_type: 'donor' | 'recipient' | 'individual';
+  details: UserDetails;
+}
+
+interface MatchedUser {
+  id: string;
+  name: string;
+}
+
 export default function MainPage() {
-  const [isPublicDonor, setIsPublicDonor] = useState(false);
-  const [donorList, setDonorList] = useState([]);
-  const [recipientModalVisible, setRecipientModalVisible] = useState(false);
-  const [donorModalVisible, setDonorModalVisible] = useState(false);
-  const [capacity, setCapacity] = useState("");
-  const [isPublicRecipient, setIsPublicRecipient] = useState(false);
-  const [foodTypes, setFoodTypes] = useState({
+  const [isPublicDonor, setIsPublicDonor] = useState<boolean>(false);
+  const [donorList, setDonorList] = useState<MatchedUser[]>([]);
+  const [recipientModalVisible, setRecipientModalVisible] = useState<boolean>(false);
+  const [donorModalVisible, setDonorModalVisible] = useState<boolean>(false);
+  const [capacity, setCapacity] = useState<string>("");
+  const [isPublicRecipient, setIsPublicRecipient] = useState<boolean>(false);
+  const [foodTypes, setFoodTypes] = useState<FoodTypes>({
     dairyFree: false,
     glutenFree: false,
     halal: false,
@@ -34,12 +71,12 @@ export default function MainPage() {
     vegetarian: false,
   });
 
-  const [recipientList, setRecipientList] = useState([]);
+  const [recipientList, setRecipientList] = useState<MatchedUser[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
 
-  const [userType, setUserType] = useState(null);
+  const [userType, setUserType] = useState<'donor' | 'recipient' | 'individual' | null>(null);
 
   useEffect(() => {
     checkUserTypeAndShowPopup();
@@ -50,59 +87,62 @@ export default function MainPage() {
     loadMatches();
   }, []);
 
-  const checkIfPublicDonor = async () => {
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!authUser) return;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .single();
-
-    if (error) throw error;
-
+  const checkIfPublicDonor = async (): Promise<void> => {
     try {
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authUser) return;
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error) throw error;
+
       setIsPublicDonor(data.public && data.user_type === "donor");
     } catch (error) {
       console.error("Error checking public donor status:", error);
     }
   };
 
-  const loadPublicDonors = async () => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("user_type", "donor")
-      .eq("public", true);
+  const loadPublicDonors = async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_type", "donor")
+        .eq("public", true);
 
-    if (error) throw error;
-    setDonorList(data);
-    console.log(data);
+      if (error) throw error;
+      setDonorList(data.map(({ id, details: { name } }: User) => ({ id, name })));
+    } catch (error) {
+      console.error("Error loading public donors:", error);
+    }
   };
 
   const checkIfPublicRecipient = async () => {
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!authUser) return;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .single();
-
-    if (error) throw error;
-
     try {
-      setIsPublicDonor(data.public && data.user_type === "recipient");
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authUser) return;
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error) throw error;
+
+      setIsPublicRecipient(data.public && data.user_type === "recipient");
     } catch (error) {
       console.error("Error checking public recipient status:", error);
     }
@@ -152,86 +192,71 @@ export default function MainPage() {
     }
   };
 
-  const handleSubmitRecipient = async () => {
+  const handleSubmitRecipient = async (): Promise<void> => {
     if (!capacity) return;
 
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!authUser) return;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .single();
-
-    if (error) throw error;
-
     try {
-      // First update user details
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authUser) return;
 
-      var updateObj = data.details;
-      updateObj["current_capcity"] = Number(capacity);
-      updateObj["last_updated"] = new Date().toISOString();
-      updateObj["public"] = isPublicRecipient;
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("users")
-        .update(updateObj)
-        .eq("id", authUser.id);
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
 
       if (error) throw error;
+
+      const updateObj: UserDetails = {
+        ...data.details,
+        current_capacity: Number(capacity),
+        last_updated: new Date().toISOString(),
+        public: isPublicRecipient,
+      };
+
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ details: updateObj })
+        .eq("id", authUser.id);
+
+      if (updateError) throw updateError;
 
       setRecipientModalVisible(false);
       setCapacity("");
-      await loadPublicRecipients(); // Reload the list
+      await loadPublicRecipients();
     } catch (error) {
-      console.error("Detailed error:", {
-        code: error.code,
-        message: error.message,
-        stack: error.stack,
-      });
-      // Show more specific error based on the operation
-      if (error.code === "permission-denied") {
-        console.error(
-          "Permission denied. Please check if you are properly authenticated."
-        );
-      }
+      console.error("Error updating recipient details:", error);
     }
   };
 
-  const handleSubmitDonor = async () => {
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!authUser) return;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .single();
-
-    if (error) throw error;
-
+  const handleSubmitDonor = async (): Promise<void> => {
     try {
-      // Update user details
-      var updateObj = data.details;
-      updateObj["food_types"] = foodTypes; // Change from capacity to foodTypes
-      updateObj["last_updated"] = new Date().toISOString();
-      updateObj["public"] = isPublicDonor;
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authUser) return;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("users")
-        .update({ details: updateObj }) // Wrap updateObj in details field
-        .eq("id", authUser.id);
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
 
       if (error) throw error;
+
+      const updateObj: UserDetails = {
+        ...data.details,
+        food_types: foodTypes,
+        last_updated: new Date().toISOString(),
+        public: isPublicDonor,
+      };
+
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ details: updateObj })
+        .eq("id", authUser.id);
+
+      if (updateError) throw updateError;
 
       setDonorModalVisible(false);
       setFoodTypes({
@@ -242,18 +267,9 @@ export default function MainPage() {
         vegan: false,
         vegetarian: false,
       });
-      await loadPublicDonors(); // Reload donor list after update
+      await loadPublicDonors();
     } catch (error) {
-      console.error("Detailed error:", {
-        code: error.code,
-        message: error.message,
-        stack: error.stack,
-      });
-      if (error.code === "permission-denied") {
-        console.error(
-          "Permission denied. Please check if you are properly authenticated."
-        );
-      }
+      console.error("Error updating donor details:", error);
     }
   };
 
@@ -423,7 +439,7 @@ export default function MainPage() {
                                     RECIPIENT
                                   </Text>
                                   <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                                    {recipientList[0].name}
+                                    {recipientList[0]?.name}
                                   </Text>
                                 </View>
                               )}
@@ -438,7 +454,7 @@ export default function MainPage() {
                                     DONOR
                                   </Text>
                                   <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                                    {donorList[0].name}
+                                    {donorList[0]?.name}
                                   </Text>
                                 </View>
                               )}
@@ -474,7 +490,7 @@ export default function MainPage() {
                                     RECIPIENT
                                   </Text>
                                   <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                                    {recipientList[1].name}
+                                    {recipientList[1]?.name}
                                   </Text>
                                 </View>
                               )}
@@ -489,7 +505,7 @@ export default function MainPage() {
                                     DONOR
                                   </Text>
                                   <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                                    {donorList[1].name}
+                                    {donorList[1]?.name}
                                   </Text>
                                 </View>
                               )}
@@ -664,8 +680,15 @@ export default function MainPage() {
           visible={recipientModalVisible}
           onRequestClose={() => setRecipientModalVisible(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center">
-            <View className="m-5 bg-white rounded-2xl p-8 items-center shadow-md shadow-black/25 w-4/5">
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={() => setRecipientModalVisible(false)} 
+            className="flex-1 bg-black/50 justify-center items-center"
+          >
+            <View 
+              className="m-5 bg-white rounded-2xl p-8 items-center shadow-md shadow-black/25 w-4/5"
+              onStartShouldSetResponder={() => true}
+            >
               <Text className="text-2xl font-bold text-[#303F9F] mb-2 text-center">
                 Storage Capacity
               </Text>
@@ -689,8 +712,7 @@ export default function MainPage() {
                 <Checkbox
                   className="mr-3 rounded border-2 border-[#3949AB]"
                   checked={isPublicRecipient}
-                  onValueChange={(checked) => setIsPublicRecipient(checked)} // Changed from onCheckedChange
-                  color={isPublicRecipient ? "#3949AB" : undefined}
+                  onCheckedChange={(checked) => setIsPublicRecipient(checked)}
                 />
                 <Text className="text-base text-[#4A5568]">
                   Make my organization visible to donors
@@ -706,7 +728,7 @@ export default function MainPage() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         </Modal>
 
         {/* Donor Modal */}
@@ -731,13 +753,12 @@ export default function MainPage() {
                     <Checkbox
                       className="mr-3 rounded border-2 border-[#3949AB]"
                       checked={value}
-                      onValueChange={(checked) =>
+                      onCheckedChange={(checked) =>
                         setFoodTypes((prev) => ({
                           ...prev,
                           [key]: checked,
                         }))
                       }
-                      color={value ? "#3949AB" : undefined}
                     />
                     <Text className="text-base text-[#4A5568]">
                       {key.charAt(0).toUpperCase() +
@@ -751,8 +772,7 @@ export default function MainPage() {
                 <Checkbox
                   className="mr-3 rounded border-2 border-[#3949AB]"
                   checked={isPublicDonor}
-                  onValueChange={(checked) => setIsPublicDonor(checked)}
-                  color={isPublicDonor ? "#3949AB" : undefined}
+                  onCheckedChange={(checked) => setIsPublicDonor(checked)}
                 />
                 <Text className="text-base text-[#4A5568]">
                   Make my organization visible to recipients

@@ -14,19 +14,34 @@ import { useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
+interface RecipientDetails {
+  location?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  capacity?: number;
+}
+
+interface DonorDetails {
+  food_types?: Record<string, boolean>;
+  lastUpdated?: string;
+}
+
 export default function DetailsPage() {
   const router = useRouter();
-  const {
-    recipientName,
-    recipientImage,
-    recipientId,
-    donorName,
-    donorImage,
-    donorId,
-  } = useLocalSearchParams();
+  const params = useLocalSearchParams<{
+    recipientName: string;
+    recipientImage: string;
+    recipientId: string;
+    donorName: string;
+    donorImage: string;
+    donorId: string;
+  }>();
 
-  const [recipientDetails, setRecipientDetails] = useState(null);
-  const [donorDetails, setDonorDetails] = useState(null);
+  const [recipientDetails, setRecipientDetails] = useState<RecipientDetails | null>(null);
+  const [donorDetails, setDonorDetails] = useState<DonorDetails | null>(null);
 
   useEffect(() => {
     fetchRecipientDetails();
@@ -34,7 +49,7 @@ export default function DetailsPage() {
   }, []);
 
   const fetchRecipientDetails = async () => {
-    if (!recipientId) {
+    if (!params.recipientId) {
       console.error("Recipient ID is missing.");
       return;
     }
@@ -42,12 +57,12 @@ export default function DetailsPage() {
       const { data, error } = await supabase
         .from("users")
         .select("*")
-        .eq("id", recipientId)
+        .eq("id", params.recipientId)
         .single();
 
       if (error) throw error;
-      if (data) {
-        setRecipientDetails(data.details);
+      if (data?.details) {
+        setRecipientDetails(data.details as RecipientDetails);
       } else {
         console.error("Recipient not found.");
       }
@@ -57,17 +72,20 @@ export default function DetailsPage() {
   };
 
   const fetchDonorDetails = async () => {
+    if (!params.donorId) {
+      console.error("Donor ID is missing.");
+      return;
+    }
     try {
-      // Use donorId (the actual document ID) instead of donorName
       const { data, error } = await supabase
         .from("users")
         .select("*")
-        .eq("id", donorId)
+        .eq("id", params.donorId)
         .single();
 
       if (error) throw error;
-      if (data) {
-        setDonorDetails(data.details);
+      if (data?.details) {
+        setDonorDetails(data.details as DonorDetails);
       } else {
         console.error("Donor not found.");
       }
@@ -76,8 +94,7 @@ export default function DetailsPage() {
     }
   };
 
-  // Function to update the decision in the current user's document.
-  // decisionValue is a boolean: true for accept, false for decline.
+  // Update the updateDecision function with proper error handling
   const updateDecision = async (decisionValue: boolean) => {
     try {
       const {
@@ -85,29 +102,33 @@ export default function DetailsPage() {
         error: authError,
       } = await supabase.auth.getUser();
       if (authError) throw authError;
-      if (!authUser) return;
+      if (!authUser) {
+        Alert.alert("Error", "You must be logged in to make a decision.");
+        return;
+      }
 
       const { data, error } = await supabase
         .from("users")
-        .select("*")
+        .select("decisions")
         .eq("id", authUser.id)
         .single();
 
-      const alr = data.decisions || [];
-
       if (error) throw error;
 
-      const { error: err } = await supabase
+      const decisions = data?.decisions || [];
+      const newDecision = {
+        recipient: params.recipientId,
+        donor: params.donorId,
+        decision: decisionValue,
+        timestamp: new Date().toISOString(),
+      };
+
+      const { error: updateError } = await supabase
         .from("users")
-        .update({
-          decisions: [
-            ...alr,
-            { recipient: recipientId, donor: donorId, decision: decisionValue },
-          ],
-        })
+        .update({ decisions: [...decisions, newDecision] })
         .eq("id", authUser.id);
 
-      if (err) throw err;
+      if (updateError) throw updateError;
 
       Alert.alert(
         "Success",
@@ -129,45 +150,54 @@ export default function DetailsPage() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-row items-center justify-between p-5 bg-white border-b border-[#E2E8F0] shadow-sm">
         <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push("/home")} // Change to your desired route
+          className="p-2 rounded-full bg-white/80"
+          onPress={() => router.push("/home")}
         >
           <Ionicons name="arrow-back" size={24} color="#303F9F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Details</Text>
-        {/* This empty view ensures the header is centered */}
-        <View style={{ width: 24 }} />
+        <Text className="text-2xl font-bold text-[#303F9F] flex-1 text-center -ml-6">
+          Details
+        </Text>
+        <View className="w-6" />
       </View>
 
-      <ScrollView style={styles.container}>
+      <ScrollView className="flex-1 bg-[#f8f9fa]">
         {/* Recipient Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>RECIPIENT</Text>
-          <Text style={styles.organizationName}>{recipientName}</Text>
+        <View className="p-4 mb-6">
+          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
+            RECIPIENT
+          </Text>
+          <Text className="text-2xl font-semibold text-[#2d3748] mb-4">
+            {params.recipientName}
+          </Text>
 
-          <View style={styles.imageCard}>
-            <Image source={{ uri: recipientImage }} style={styles.image} />
+          <View className="bg-white rounded-xl shadow-lg shadow-black/5 mb-4 overflow-hidden">
+            <Image source={{ uri: params.recipientImage }} className="w-full h-[200px]" />
           </View>
 
           {recipientDetails && (
-            <View style={styles.detailsCard}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Address</Text>
-                <Text style={styles.detailValue}>
+            <View className="bg-white rounded-xl p-4 shadow-lg shadow-black/5">
+              <View className="my-2">
+                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
+                  Address
+                </Text>
+                <Text className="text-base text-[#4A5568] leading-6 font-medium">
                   {recipientDetails?.location
                     ? `${recipientDetails.location.street}\n${recipientDetails.location.city}, ${recipientDetails.location.state} ${recipientDetails.location.zipCode}`
                     : "No address available"}
                 </Text>
               </View>
 
-              <View style={styles.divider} />
+              <View className="h-[1px] bg-[#e2e8f0] my-3" />
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Capacity</Text>
-                <Text style={styles.detailValue}>
+              <View className="my-2">
+                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
+                  Capacity
+                </Text>
+                <Text className="text-base text-[#4A5568] leading-6 font-medium">
                   {recipientDetails.capacity || "Not specified"} lbs
                 </Text>
               </View>
@@ -176,23 +206,32 @@ export default function DetailsPage() {
         </View>
 
         {/* Donor Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DONOR</Text>
-          <Text style={styles.organizationName}>{donorName}</Text>
+        <View className="p-4 mb-6">
+          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
+            DONOR
+          </Text>
+          <Text className="text-2xl font-semibold text-[#2d3748] mb-4">
+            {params.donorName}
+          </Text>
 
-          <View style={styles.imageCard}>
-            <Image source={{ uri: donorImage }} style={styles.image} />
+          <View className="bg-white rounded-xl shadow-lg shadow-black/5 mb-4 overflow-hidden">
+            <Image source={{ uri: params.donorImage }} className="w-full h-[200px]" />
           </View>
 
           {donorDetails && (
-            <View style={styles.detailsCard}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Food Types Available</Text>
-                <View style={styles.foodTypesList}>
+            <View className="bg-white rounded-xl p-4 shadow-lg shadow-black/5">
+              <View className="my-2">
+                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
+                  Food Types Available
+                </Text>
+                <View className="mt-1">
                   {Object.entries(donorDetails.food_types || {}).map(
                     ([type, value]) =>
                       value && (
-                        <Text key={type} style={styles.foodTypeItem}>
+                        <Text
+                          key={type}
+                          className="text-base text-[#4A5568] leading-6 py-0.5 font-medium"
+                        >
                           {type
                             .replace(/([A-Z])/g, " $1")
                             .replace(/^./, (str) => str.toUpperCase())}
@@ -202,11 +241,13 @@ export default function DetailsPage() {
                 </View>
               </View>
 
-              <View style={styles.divider} />
+              <View className="h-[1px] bg-[#e2e8f0] my-3" />
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Last Updated</Text>
-                <Text style={styles.detailValue}>
+              <View className="my-2">
+                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
+                  Last Updated
+                </Text>
+                <Text className="text-base text-[#4A5568] leading-6 font-medium">
                   {donorDetails.lastUpdated
                     ? new Date(donorDetails.lastUpdated).toLocaleDateString()
                     : "N/A"}
@@ -217,168 +258,34 @@ export default function DetailsPage() {
         </View>
 
         {/* Decision Buttons */}
-        <View style={styles.decisionButtonsContainer}>
-          <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
-            <Text style={styles.buttonText}>Accept</Text>
+        <View className="flex-row justify-around my-4">
+          <TouchableOpacity
+            className="bg-[#4CAF50] py-3 px-6 rounded-lg"
+            onPress={handleAccept}
+          >
+            <Text className="text-white text-base font-semibold text-center">
+              Accept
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.declineButton}
+            className="bg-[#F44336] py-3 px-6 rounded-lg"
             onPress={handleDecline}
           >
-            <Text style={styles.buttonText}>Decline</Text>
+            <Text className="text-white text-base font-semibold text-center">
+              Decline
+            </Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          style={styles.returnButton}
-          onPress={() => router.push("/home")} // Change to your desired route
+          className="bg-[#303F9F] py-3 px-6 rounded-lg self-center mb-6"
+          onPress={() => router.push("/home")}
         >
-          <Text style={styles.buttonText}>Return to Home</Text>
+          <Text className="text-white text-base font-semibold text-center">
+            Return to Home
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "white",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 20,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#303F9F",
-    flex: 1,
-    textAlign: "center",
-    marginLeft: -24,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  section: {
-    padding: 16,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1,
-    color: "#666",
-    marginBottom: 8,
-  },
-  organizationName: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#2d3748",
-    marginBottom: 16,
-  },
-  imageCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    marginBottom: 16,
-    overflow: "hidden",
-  },
-  image: {
-    width: "100%",
-    height: 200,
-  },
-  detailsCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-  },
-  detailRow: {
-    marginVertical: 8,
-  },
-  detailLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#3949AB",
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  detailValue: {
-    fontSize: 16,
-    color: "#4A5568",
-    lineHeight: 24,
-    fontWeight: "500",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#e2e8f0",
-    marginVertical: 12,
-  },
-  foodTypesList: {
-    marginTop: 4,
-  },
-  foodTypeItem: {
-    fontSize: 16,
-    color: "#4A5568",
-    lineHeight: 24,
-    paddingVertical: 2,
-    fontWeight: "500",
-  },
-  decisionButtonsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 16,
-  },
-  acceptButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  declineButton: {
-    backgroundColor: "#F44336",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  returnButton: {
-    backgroundColor: "#303F9F",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignSelf: "center",
-    marginBottom: 24,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-});

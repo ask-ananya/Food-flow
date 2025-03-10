@@ -7,28 +7,52 @@ import {
   ScrollView,
   Alert,
   SafeAreaView,
-  StyleSheet,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
+type UserType = 'donor' | 'recipient' | 'individual' | null;
+
+interface LocationType {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+interface UserDetails {
+  location: LocationType;
+  operatingHours: Record<string, any>;
+  capacity?: string;
+  establishmentType?: string;
+  donationFrequency?: string;
+  typicalDonations?: string;
+}
+
+interface UserData {
+  id: string;
+  email: string;
+  user_type: UserType;
+  details: UserDetails;
+}
+
 export default function Settings() {
   const router = useRouter();
-  const [userType, setUserType] = useState("");
+  const [userType, setUserType] = useState<UserType>(null);
   const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [editMode, setEditMode] = useState(false);
 
-  // Form states
-  const [location, setLocation] = useState({
+  // Form states with proper types
+  const [location, setLocation] = useState<LocationType>({
     street: "",
     city: "",
     state: "",
     zipCode: "",
   });
-  const [operatingHours, setOperatingHours] = useState({});
+  const [operatingHours, setOperatingHours] = useState<Record<string, any>>({});
   const [capacity, setCapacity] = useState("");
   const [establishmentType, setEstablishmentType] = useState("");
   const [donationFrequency, setDonationFrequency] = useState("");
@@ -38,14 +62,15 @@ export default function Settings() {
     loadUserData();
   }, []);
 
+  // Improved error handling in loadUserData
   const loadUserData = async () => {
     try {
-      const {
-        data: { user: authUser },
-        error: authError,
-      } = await supabase.auth.getUser();
-      if (authError) throw authError;
-      if (!authUser) return;
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw new Error(authError.message);
+      if (!authUser) {
+        router.push('/sign-in');
+        return;
+      }
 
       const { data, error } = await supabase
         .from("users")
@@ -53,73 +78,90 @@ export default function Settings() {
         .eq("id", authUser.id)
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error('No user data found');
 
-      if (data) {
-        setUserData(data);
-        setUserType(data.user_type);
+      setUserData(data as UserData);
+      setUserType(data.user_type as UserType);
 
-        // Set form data based on user type
-        if (data.user_type === "recipient" && data.details) {
-          setLocation(data.details.location);
-          setOperatingHours(data.details.operatingHours);
-          setCapacity(data.details.capacity);
-        } else if (data.user_type === "donor" && data.details) {
-          setLocation(data.details.location);
-          setOperatingHours(data.details.operatingHours);
-          setEstablishmentType(data.details.establishmentType);
-          setDonationFrequency(data.details.donationFrequency);
-          setTypicalDonations(data.details.typicalDonations);
+      if (data.details) {
+        setLocation(data.details.location || {
+          street: "",
+          city: "",
+          state: "",
+          zipCode: "",
+        });
+        setOperatingHours(data.details.operatingHours || {});
+        
+        if (data.user_type === "recipient") {
+          setCapacity(data.details.capacity || "");
+        } else if (data.user_type === "donor") {
+          setEstablishmentType(data.details.establishmentType || "");
+          setDonationFrequency(data.details.donationFrequency || "");
+          setTypicalDonations(data.details.typicalDonations || "");
         }
       }
     } catch (error) {
       console.error("Error loading user data:", error);
-      Alert.alert("Error", "Failed to load user data");
+      Alert.alert("Error", error instanceof Error ? error.message : "Failed to load user data");
     }
   };
 
+  // Improved handleSave with validation
   const handleSave = async () => {
-    setLoading(true);
     try {
-      const {
-        data: { user: authUser },
-        error: authError,
-      } = await supabase.auth.getUser();
-      if (authError) throw authError;
-      if (!authUser) return;
-
-      var updateData = {};
-
-      if (userType === "recipient") {
-        updateData.details = {
-          ...userData.details,
-          location,
-          operatingHours,
-          capacity,
-        };
-      } else if (userType === "donor") {
-        updateData.details = {
-          ...userData.details,
-          location,
-          operatingHours,
-          establishmentType,
-          donationFrequency,
-          typicalDonations,
-        };
+      // Basic validation
+      if (!location.street || !location.city || !location.state || !location.zipCode) {
+        Alert.alert("Error", "Please fill in all address fields");
+        return;
       }
+
+      if (userType === "recipient" && !capacity) {
+        Alert.alert("Error", "Please enter storage capacity");
+        return;
+      }
+
+      if (userType === "donor" && (!establishmentType || !donationFrequency)) {
+        Alert.alert("Error", "Please select establishment type and donation frequency");
+        return;
+      }
+
+      setLoading(true);
+
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw new Error(authError.message);
+      if (!authUser) {
+        router.push('/sign-in');
+        return;
+      }
+
+      const updateData = {
+        details: {
+          ...userData?.details,
+          location,
+          operatingHours,
+          ...(userType === "recipient" ? { capacity } : {}),
+          ...(userType === "donor" ? {
+            establishmentType,
+            donationFrequency,
+            typicalDonations,
+          } : {}),
+        }
+      };
 
       const { error } = await supabase
         .from("users")
         .update(updateData)
         .eq("id", authUser.id);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       Alert.alert("Success", "Settings updated successfully");
       setEditMode(false);
+      await loadUserData(); // Reload user data after successful update
     } catch (error) {
       console.error("Error updating settings:", error);
-      Alert.alert("Error", "Failed to update settings");
+      Alert.alert("Error", error instanceof Error ? error.message : "Failed to update settings");
     } finally {
       setLoading(false);
     }
@@ -136,17 +178,19 @@ export default function Settings() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1 bg-gray-50">
-        <View style={styles.header}>
+        <View className="flex-row items-center justify-between p-5 bg-white border-b border-gray-200 shadow">
           <TouchableOpacity
-            style={styles.backButton}
+            className="p-2 rounded-full bg-white/80"
             onPress={() => router.push("/home")}
           >
             <Ionicons name="arrow-back" size={24} color="#303F9F" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <View style={{ width: 24 }} />
+          <Text className="flex-1 text-2xl font-bold text-[#303F9F] text-center -ml-6">
+            Settings
+          </Text>
+          <View className="w-6" />
         </View>
 
         <View className="bg-white rounded-xl p-4 m-4 shadow-md">
@@ -333,102 +377,3 @@ export default function Settings() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "white",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 20,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#303F9F",
-    flex: 1,
-    textAlign: "center",
-    marginLeft: -24,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-    padding: 16,
-  },
-  card: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  date: {
-    fontSize: 14,
-    color: "#4A5568",
-    fontWeight: "500",
-  },
-  ratingContainer: {
-    flexDirection: "row",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E2E8F0",
-    marginVertical: 12,
-  },
-  cardBody: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: "row",
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  label: {
-    width: 80,
-    fontSize: 14,
-    color: "#3949AB",
-    fontWeight: "600",
-  },
-  value: {
-    flex: 1,
-    fontSize: 14,
-    color: "#2D3748",
-  },
-  statusContainer: {
-    backgroundColor: "#E8EAF6",
-    padding: 8,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  statusText: {
-    color: "#3949AB",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-});

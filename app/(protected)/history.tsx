@@ -4,10 +4,10 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 // Sample data for transaction history
 const transactions = [
@@ -122,7 +122,7 @@ const transactions = [
     status: "Completed",
   },
 ];
-import { useRouter } from "expo-router";
+
 export default function History() {
   const router = useRouter();
   const renderStars = (rating: number) => {
@@ -132,61 +132,87 @@ export default function History() {
         name={index < rating ? "star" : "star-outline"}
         size={16}
         color={index < rating ? "#FFD700" : "#CBD5E0"}
-        style={{ marginRight: 2 }}
+        className="mr-0.5"
       />
     ));
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-row items-center justify-between p-5 bg-white border-b border-[#E2E8F0] shadow-sm">
         <TouchableOpacity
-          style={styles.backButton}
+          className="p-2 rounded-full bg-white/80"
           onPress={() => router.push("/home")}
         >
           <Ionicons name="arrow-back" size={24} color="#303F9F" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>History</Text>
-        <View style={{ width: 24 }} />
+        <Text className="text-2xl font-bold text-[#303F9F] flex-1 text-center -ml-6">
+          History
+        </Text>
+        <View className="w-6" />
       </View>
 
-      <ScrollView style={styles.container}>
+      <ScrollView className="flex-1 bg-[#f8f9fa] p-4">
         {transactions.map((transaction) => (
-          <View key={transaction.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.date}>{transaction.date}</Text>
-              <View style={styles.ratingContainer}>
+          <View key={transaction.id} className="bg-white rounded-xl p-4 mb-4 shadow-lg shadow-black/5">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-sm text-[#4A5568] font-medium">
+                {transaction.date}
+              </Text>
+              <View className="flex-row">
                 {renderStars(transaction.rating)}
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View className="h-[1px] bg-[#E2E8F0] my-3" />
 
-            <View style={styles.cardBody}>
-              <View style={styles.row}>
-                <Text style={styles.label}>Donor:</Text>
-                <Text style={styles.value}>{transaction.donor}</Text>
+            <View className="mb-3">
+              <View className="flex-row mb-2 items-center">
+                <Text className="w-20 text-sm text-[#3949AB] font-semibold">
+                  Donor:
+                </Text>
+                <Text className="flex-1 text-sm text-[#2D3748]">
+                  {transaction.donor}
+                </Text>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Recipient:</Text>
-                <Text style={styles.value}>{transaction.recipient}</Text>
+              <View className="flex-row mb-2 items-center">
+                <Text className="w-20 text-sm text-[#3949AB] font-semibold">
+                  Recipient:
+                </Text>
+                <Text className="flex-1 text-sm text-[#2D3748]">
+                  {transaction.recipient}
+                </Text>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Food Type:</Text>
-                <Text style={styles.value}>{transaction.foodType}</Text>
+              <View className="flex-row mb-2 items-center">
+                <Text className="w-20 text-sm text-[#3949AB] font-semibold">
+                  Food Type:
+                </Text>
+                <Text className="flex-1 text-sm text-[#2D3748]">
+                  {transaction.foodType}
+                </Text>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Quantity:</Text>
-                <Text style={styles.value}>{transaction.quantity}</Text>
+              <View className="flex-row mb-2 items-center">
+                <Text className="w-20 text-sm text-[#3949AB] font-semibold">
+                  Quantity:
+                </Text>
+                <Text className="flex-1 text-sm text-[#2D3748]">
+                  {transaction.quantity}
+                </Text>
               </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Distance:</Text>
-                <Text style={styles.value}>{transaction.distance}</Text>
+              <View className="flex-row mb-2 items-center">
+                <Text className="w-20 text-sm text-[#3949AB] font-semibold">
+                  Distance:
+                </Text>
+                <Text className="flex-1 text-sm text-[#2D3748]">
+                  {transaction.distance}
+                </Text>
               </View>
             </View>
 
-            <View style={styles.statusContainer}>
-              <Text style={styles.statusText}>{transaction.status}</Text>
+            <View className="bg-[#E8EAF6] p-2 rounded-lg self-start">
+              <Text className="text-[#3949AB] text-xs font-semibold">
+                {transaction.status}
+              </Text>
             </View>
           </View>
         ))}
@@ -194,102 +220,3 @@ export default function History() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "white",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 20,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#303F9F",
-    flex: 1,
-    textAlign: "center",
-    marginLeft: -24,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-    padding: 16,
-  },
-  card: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  date: {
-    fontSize: 14,
-    color: "#4A5568",
-    fontWeight: "500",
-  },
-  ratingContainer: {
-    flexDirection: "row",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E2E8F0",
-    marginVertical: 12,
-  },
-  cardBody: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: "row",
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  label: {
-    width: 80,
-    fontSize: 14,
-    color: "#3949AB",
-    fontWeight: "600",
-  },
-  value: {
-    flex: 1,
-    fontSize: 14,
-    color: "#2D3748",
-  },
-  statusContainer: {
-    backgroundColor: "#E8EAF6",
-    padding: 8,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  statusText: {
-    color: "#3949AB",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-});
