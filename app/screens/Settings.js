@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     },
     signOutButton: {
         flexDirection: 'row',
-        backgroundColor: '#7911ba',
+        backgroundColor: '#DC2626',
         padding: 16,
         borderRadius: 12,
         margin: 16,

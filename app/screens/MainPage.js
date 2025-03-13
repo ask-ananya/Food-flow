@@ -9,8 +9,7 @@ import {
     Platform,
     ScrollView,
     Image,
-    Dimensions,
-    ActivityIndicator
+    Dimensions
 } from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import React, {useEffect, useState} from 'react';
@@ -19,7 +18,9 @@ import {doc, collection, getDoc, getDocs, updateDoc, setDoc, deleteDoc} from 'fi
 import {FIREBASE_DB} from '../../FirebaseConfig';
 import Checkbox from 'expo-checkbox';
 import {Ionicons} from '@expo/vector-icons';
+import {ProgressBar} from "react-native-web";
 import * as Progress from 'react-native-progress';
+
 
 export default function MainPage({navigation}) {
     const [isPublicDonor, setIsPublicDonor] = useState(false);
@@ -38,12 +39,16 @@ export default function MainPage({navigation}) {
     });
 
     const [recipientList, setRecipientList] = useState([]);
+
     const [loading, setLoading] = useState(true);
+
     const [userType, setUserType] = useState(null);
 
     useEffect(() => {
         checkUserTypeAndShowPopup();
         checkIfPublicRecipient();
+        //loadPublicRecipients();
+        //loadPublicDonors();
         checkIfPublicDonor();
         loadMatches();
     }, []);
@@ -116,9 +121,9 @@ export default function MainPage({navigation}) {
                 console.log("User type:", usertype)
                 setUserType(usertype);
 
-                if (usertype === 'Recipient') {
+                if (userType === 'Recipient') {
                     setRecipientModalVisible(true);
-                } else if (usertype === 'Donor') {
+                } else if (userType === 'Donor') {
                     setDonorModalVisible(true);
                 }
             }
@@ -250,151 +255,110 @@ export default function MainPage({navigation}) {
     };
 
     const loadMatches = async () => {
-        try {
-            let recs = [], dons = [];
-            const response = await fetch(`https://matching-79369524935.us-east1.run.app/${FIREBASE_AUTH.currentUser?.uid}`);
-            const data = await response.json();
-            
-            for (let i = 0; i < data.length; i++) {
-                let recipient = await getDoc(doc(FIREBASE_DB, 'users', data[i][1]));
-                let donor = await getDoc(doc(FIREBASE_DB, 'users', data[i][0]));
-                
-                if (recipient.exists() && donor.exists()) {
-                    let r = recipient.data();
-                    let d = donor.data();
-                    recs.push({id: recipient.id, name: r.recipientDetails.name});
-                    dons.push({id: donor.id, name: d.donorDetails.name});
-                }
+        let recs = [], dons = []
+        let data = await (await fetch(`https://matching-79369524935.us-east1.run.app/${FIREBASE_AUTH.currentUser?.uid}`)).json()
+        for (let i = 0; i < data.length; i++) {
+            let recipient = await getDoc(doc(FIREBASE_DB, 'users', data[i][1]));
+            let donor = await getDoc(doc(FIREBASE_DB, 'users', data[i][0]));
+            if (recipient.exists() && donor.exists()) {
+                let r = recipient.data();
+                let d = donor.data();
+                recs.push({id: recipient.id, name: r.recipientDetails.name});
+                dons.push({id: donor.id, name: d.donorDetails.name});
             }
-            
-            setRecipientList(recs);
-            setDonorList(dons);
-        } catch (error) {
-            console.error('Error loading matches:', error);
-        } finally {
-            setLoading(false);
         }
+        console.log(recs, dons)
+        setRecipientList(recs);
+        setDonorList(dons);
+        setLoading(false);
     }
 
-    const renderMatchCard = (recipientInfo, donorInfo, index) => {
-        return (
-            <View key={`match-${index}`} style={styles.urgentCard}>
-                <View style={styles.combinedCardContent}>
-                    {/* Recipient Section */}
-                    <View style={styles.cardHalf}>
-                        <Text style={styles.cardSectionTitle}>RECIPIENT</Text>
-                        <Text style={styles.cardOrganizationName}>{recipientInfo.name}</Text>
-                    </View>
-
-                    {/* Divider */}
-                    <View style={styles.cardDivider} />
-
-                    {/* Donor Section */}
-                    <View style={styles.cardHalf}>
-                        <Text style={styles.cardSectionTitle}>DONOR</Text>
-                        <Text style={styles.cardOrganizationName}>{donorInfo.name}</Text>
-                    </View>
-                </View>
-                <TouchableOpacity
-                    style={styles.detailsButton}
-                    onPress={() =>
-                        navigation.navigate('DetailsPage', {
-                            recipientName: recipientInfo.name,
-                            recipientId: recipientInfo.id,
-                            donorName: donorInfo.name,
-                            donorId: donorInfo.id,
-                        })
-                    }
-                >
-                    <Text style={styles.detailsButtonText}>Details</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    };
-
-    const renderSingleEntityCard = (entityInfo, index, type) => {
-        return (
-            <View key={`entity-${index}`} style={styles.urgentCard}>
-                <View style={styles.combinedCardContent}>
-                    <View style={styles.cardHalf}>
-                        <Text style={styles.cardSectionTitle}>{type}</Text>
-                        <Text style={styles.cardOrganizationName}>{entityInfo.name}</Text>
-                    </View>
-                </View>
-                <TouchableOpacity
-                    style={styles.detailsButton}
-                    onPress={() => {
-                        const navigationParams = type === "RECIPIENT" 
-                            ? { recipientName: entityInfo.name, recipientId: entityInfo.id }
-                            : { donorName: entityInfo.name, donorId: entityInfo.id };
-                        
-                        navigation.navigate('DetailsPage', navigationParams);
-                    }}
-                >
-                    <Text style={styles.detailsButtonText}>Details</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    };
-
     return (
-        <View style={styles.mainContainer}>
-          <LinearGradient
-              colors={['#F5F7FF', '#EDF0FF']}
-              style={styles.background}
-          />
+        <View style={{
+            backgroundColor: 'white',
+            ...styles.container
+        }}>
+            <LinearGradient
+                colors={['#E8EAF6', '#C5CAE9']}
+                style={styles.background}
+            />
             <SafeAreaView style={styles.container}>
+                <LinearGradient
+                    colors={['#ffffff', '#E8EAF6']}
+                    style={styles.background}
+                />
                 {/* Header Section */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>FoodFlow</Text>
                     <View style={styles.headerIcons}>
-                        <Ionicons name="person-circle-outline" size={30} color="#303F9F" style={styles.icon}/>
-                        <Ionicons name="notifications-outline" size={24} color="#303F9F" style={styles.icon}/>
+                        <Ionicons name="person-circle-outline" size={30} color="black" style={styles.icon}/>
+                        <Ionicons name="notifications-outline" size={24} color="black" style={styles.icon}/>
                     </View>
                 </View>
 
-                <View style={styles.contentContainer}>
-                    {/* Search Input */}
-                    <View style={styles.searchInputContainer}>
-                        <Ionicons name="location-outline" size={20} color="#666"/>
+                <View style={{flex: 1, padding: 16, backgroundColor: ""}}>
+
+                    {/* Input Section */}
+                    <View style={styles.inputContainer}>
+                        <Ionicons name="location-outline" size={20} color="gray"/>
                         <TextInput
-                            style={styles.searchInput}
+                            style={styles.input}
                             placeholder="Make a donation today..."
-                            placeholderTextColor="#888"
+                            placeholderTextColor="gray"
                         />
                     </View>
 
-                    {/* Content Section */}
-                    <ScrollView 
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContent}
-                    >
+
+                    {/* Recommendations Section */}
+                    <ScrollView contentContainerStyle={{
+                        flexGrow: 1,
+                        justifyContent: 'flex-end'
+                    }}>
                         {/* Metrics Section */}
                         <View style={styles.metricsContainer}>
                             <View style={[styles.metricCard, styles.smallMetricCard]}>
                                 <LinearGradient
                                     colors={['#E8EAF6', '#C5CAE9']}
-                                    style={styles.metricGradient}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: 16,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        padding: 12,
+                                    }}
                                 >
                                     <Text style={styles.metricNumber}>0</Text>
                                     <Text style={styles.metricLabel}>Donation{"\n"}Spots</Text>
                                 </LinearGradient>
                             </View>
-                            
                             <View style={[styles.metricCard, styles.primaryMetricCard]}>
                                 <LinearGradient
                                     colors={['#303F9F', '#3949AB']}
-                                    style={styles.metricGradient}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: 16,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        padding: 16,
+                                    }}
                                 >
-                                    <Text style={[styles.metricNumber, {color: 'white'}]}>0</Text>
-                                    <Text style={[styles.metricLabel, {color: 'white'}]}>Total Donations</Text>
+                                    <Text style={{...styles.metricNumber, color: 'white'}}>0</Text>
+                                    <Text style={{...styles.metricLabel, color: 'white'}}>Total Donations</Text>
                                 </LinearGradient>
                             </View>
-                            
                             <View style={[styles.metricCard, styles.smallMetricCard]}>
                                 <LinearGradient
                                     colors={['#E8EAF6', '#C5CAE9']}
-                                    style={styles.metricGradient}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: 16,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        padding: 12,
+                                    }}
                                 >
                                     <Text style={styles.metricNumber}>0</Text>
                                     <Text style={styles.metricLabel}>Drivers{"\n"}Nearby</Text>
@@ -402,89 +366,248 @@ export default function MainPage({navigation}) {
                             </View>
                         </View>
 
-                        {/* Matches/Recommendations Section */}
-                        <View style={styles.recommendationsSection}>
-                            <Text style={styles.sectionTitle}>Recommended Matches</Text>
-                            
-                            {/* Loading State */}
-                            {loading ? (
-                                <View style={styles.loadingContainer}>
-                                    <Progress.Circle size={30} indeterminate={true} color="#303F9F" />
-                                    <Text style={styles.loadingText}>Looking for matches...</Text>
-                                </View>
-                            ) : userType === null ? (
-                                <View style={styles.loadingContainer}>
-                                    <ActivityIndicator size="large" color="#303F9F" />
-                                    <Text style={styles.loadingText}>Loading user data...</Text>
-                                </View>
-                            ) : (
-                                <>
-                                    {/* Individual User Match Display */}
-                                    {userType === "Individual" ? (
-                                        <>
-                                            {/* Render match cards */}
-                                            {recipientList.length > 0 && donorList.length > 0 ? (
-                                                recipientList.slice(0, 2).map((recipient, index) => (
-                                                    donorList[index] && renderMatchCard(recipient, donorList[index], index)
-                                                ))
-                                            ) : (
-                                                <Text style={styles.noMatchesText}>No matches found at this time.</Text>
-                                            )}
-                                            
-                                            {/* Show "View More" button if more than 2 recommendations */}
-                                            {recipientList.length > 2 && (
-                                                <TouchableOpacity style={styles.viewMoreButton}>
-                                                    <Text style={styles.viewMoreButtonText}>
-                                                        View {recipientList.length - 2} more recommendations
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <>
-                                            {/* Donor or Recipient User Display */}
-                                            {userType === "Donor" ? (
-                                                recipientList.slice(0, 4).map((recipient, index) => (
-                                                    renderSingleEntityCard(recipient, index, "RECIPIENT")
-                                                ))
-                                            ) : (
-                                                donorList.slice(0, 4).map((donor, index) => (
-                                                    renderSingleEntityCard(donor, index, "DONOR")
-                                                ))
-                                            )}
-                                            
-                                            {/* Show "View More" button if needed */}
-                                            {(userType === "Donor" && recipientList.length > 4) || 
-                                             (userType === "Recipient" && donorList.length > 4) ? (
-                                                <TouchableOpacity style={styles.viewMoreButton}>
-                                                    <Text style={styles.viewMoreButtonText}>
-                                                        View more options
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            ) : null}
-                                        </>
-                                    )}
-                                </>
-                            )}
-                        </View>
+                        {/* Space Between Sections */}
+                        <View style={{flex: 1}}/>
+
+                        {userType != null ? (
+                            <>
+                                {userType === "Individual" ? (
+                                    <View style={styles.urgentContainer}>
+                                        {loading ? (<>
+                                            <View style={{
+                                                display: "flex",
+                                                flexDirection: "row",
+                                                width: "100%",
+                                                justifyContent: "center"
+                                            }}>
+                                                <Progress.Circle size={25} indeterminate={true}/>
+                                                <Text>Getting matches...</Text>
+                                            </View>
+                                        </>) : (
+                                            <>
+                                                {/* First Card - Combined Recipient and Donor */}
+                                                {(recipientList.length > 0 || donorList.length > 0) && (
+                                                    <View style={styles.urgentCard}>
+                                                        <View style={styles.combinedCardContent}>
+                                                            {/* Recipient Section */}
+                                                            {recipientList.length > 0 && (
+                                                                <View style={styles.cardHalf}>
+                                                                    <Text
+                                                                        style={styles.cardSectionTitle}>RECIPIENT</Text>
+                                                                    <Text
+                                                                        style={styles.cardOrganizationName}>{recipientList[0].name}</Text>
+                                                                </View>
+                                                            )}
+
+                                                            {/* Divider */}
+                                                            <View style={styles.cardDivider}/>
+
+                                                            {/* Donor Section */}
+                                                            {donorList.length > 0 && (
+                                                                <View style={styles.cardHalf}>
+                                                                    <Text style={styles.cardSectionTitle}>DONOR</Text>
+                                                                    <Text
+                                                                        style={styles.cardOrganizationName}>{donorList[0].name}</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                        <TouchableOpacity
+                                                            style={styles.detailsButton}
+                                                            onPress={() =>
+                                                                navigation.navigate('DetailsPage', {
+                                                                    recipientName: recipientList[0].name,
+                                                                    recipientId: recipientList[0].id,
+                                                                    donorName: donorList[0].name,
+                                                                    donorId: donorList[0].id,
+                                                                })
+                                                            }
+                                                        >
+                                                            <Text style={styles.detailsButtonText}>Details</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+                                                {/* First Card - Combined Recipient and Donor */}
+                                                {(recipientList.length > 1 || donorList.length > 1) && (
+                                                    <View style={styles.urgentCard}>
+                                                        <View style={styles.combinedCardContent}>
+                                                            {/* Recipient Section */}
+                                                            {recipientList.length > 0 && (
+                                                                <View style={styles.cardHalf}>
+                                                                    <Text
+                                                                        style={styles.cardSectionTitle}>RECIPIENT</Text>
+                                                                    <Text
+                                                                        style={styles.cardOrganizationName}>{recipientList[1].name}</Text>
+                                                                </View>
+                                                            )}
+
+                                                            {/* Divider */}
+                                                            <View style={styles.cardDivider}/>
+
+                                                            {/* Donor Section */}
+                                                            {donorList.length > 0 && (
+                                                                <View style={styles.cardHalf}>
+                                                                    <Text style={styles.cardSectionTitle}>DONOR</Text>
+                                                                    <Text
+                                                                        style={styles.cardOrganizationName}>{donorList[1].name}</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                        <TouchableOpacity
+                                                            style={styles.detailsButton}
+                                                            onPress={() =>
+                                                                navigation.navigate('DetailsPage', {
+                                                                    recipientName: recipientList[1].name,
+                                                                    recipientId: recipientList[1].id,
+                                                                    donorName: donorList[1].name,
+                                                                    donorId: donorList[1].id,
+                                                                })
+                                                            }
+                                                        >
+                                                            <Text style={styles.detailsButtonText}>Details</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+
+                                                {/* View More Recommendations Button */}
+                                                {recipientList.length > 2 && (
+                                                    <TouchableOpacity style={styles.recommendationsButton}>
+                                                        <Text style={styles.recommendationsButtonText}>
+                                                            View {recipientList.length - 2} more recommendations...
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </>
+                                        )}
+                                    </View>
+                                ) : (
+                                    <>
+                                        <View style={styles.urgentCard}>
+                                            <View style={styles.combinedCardContent}>
+                                                {/* Recipient Section */}
+                                                <View style={styles.cardHalf}>
+                                                    <Text
+                                                        style={styles.cardSectionTitle}>{userType === "Donor" ? "Recipient" : "Donor"}</Text>
+                                                    <Text style={styles.cardOrganizationName}>Edison Pepper Farms</Text>
+                                                </View>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        recipientName: recipientList[0].name,
+                                                        recipientId: recipientList[0].id,
+                                                        donorName: donorList[0].name,
+                                                        donorId: donorList[0].id,
+                                                    })
+                                                }
+                                            >
+                                                <Text style={styles.detailsButtonText}>Details</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.urgentCard}>
+                                            <View style={styles.combinedCardContent}>
+                                                {/* Recipient Section */}
+                                                <View style={styles.cardHalf}>
+                                                    <Text
+                                                        style={styles.cardSectionTitle}>{userType === "Donor" ? "Recipient" : "Donor"}</Text>
+                                                    <Text style={styles.cardOrganizationName}>Edison Pepper Farms</Text>
+                                                </View>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        recipientName: recipientList[0].name,
+                                                        recipientId: recipientList[0].id,
+                                                        donorName: donorList[0].name,
+                                                        donorId: donorList[0].id,
+                                                    })
+                                                }
+                                            >
+                                                <Text style={styles.detailsButtonText}>Details</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.urgentCard}>
+                                            <View style={styles.combinedCardContent}>
+                                                {/* Recipient Section */}
+                                                <View style={styles.cardHalf}>
+                                                    <Text
+                                                        style={styles.cardSectionTitle}>{userType === "Donor" ? "Recipient" : "Donor"}</Text>
+                                                    <Text style={styles.cardOrganizationName}>Edison Pepper Farms</Text>
+                                                </View>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        recipientName: recipientList[0].name,
+                                                        recipientId: recipientList[0].id,
+                                                        donorName: donorList[0].name,
+                                                        donorId: donorList[0].id,
+                                                    })
+                                                }
+                                            >
+                                                <Text style={styles.detailsButtonText}>Details</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.urgentCard}>
+                                            <View style={styles.combinedCardContent}>
+                                                {/* Recipient Section */}
+                                                <View style={styles.cardHalf}>
+                                                    <Text
+                                                        style={styles.cardSectionTitle}>{userType === "Donor" ? "Recipient" : "Donor"}</Text>
+                                                    <Text style={styles.cardOrganizationName}>Edison Pepper Farms</Text>
+                                                </View>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.detailsButton}
+                                                onPress={() =>
+                                                    navigation.navigate('DetailsPage', {
+                                                        recipientName: recipientList[0].name,
+                                                        recipientId: recipientList[0].id,
+                                                        donorName: donorList[0].name,
+                                                        donorId: donorList[0].id,
+                                                    })
+                                                }
+                                            >
+                                                <Text style={styles.detailsButtonText}>Details</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <View style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                width: "100%",
+                                justifyContent: "center"
+                            }}>
+                                <Progress.Circle size={25} indeterminate={true}/>
+                                <Text>Loading...</Text>
+                            </View>
+                        )}
+
+
                     </ScrollView>
                 </View>
 
-                {/* Bottom Navigation */}
+                {/* Bottom Navigation */
+                }
                 <View style={styles.bottomNav}>
                     <TouchableOpacity
                         style={styles.navItem}
                         onPress={() => navigation.navigate('MainPage')}
                     >
-                        <Ionicons name="home" size={24} color="#303F9F"/>
-                        <Text style={[styles.navLabel, {color: '#303F9F'}]}>Home</Text>
+                        <Ionicons name="home-outline" size={24} color="gray"/>
+                        <Text style={styles.navLabel}>Home</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.navItem}
                         onPress={() => navigation.navigate('History')}
                     >
-                        <Ionicons name="time-outline" size={24} color="#666"/>
+                        <Ionicons name="time-outline" size={24} color="gray"/>
                         <Text style={styles.navLabel}>History</Text>
                     </TouchableOpacity>
 
@@ -492,12 +615,13 @@ export default function MainPage({navigation}) {
                         style={styles.navItem}
                         onPress={() => navigation.navigate('Settings')}
                     >
-                        <Ionicons name="settings-outline" size={24} color="#666"/>
+                        <Ionicons name="settings-outline" size={24} color="gray"/>
                         <Text style={styles.navLabel}>Settings</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Recipient Modal */}
+                {/* Recipient Modal */
+                }
                 <Modal
                     animationType="slide"
                     transparent={true}
@@ -511,7 +635,7 @@ export default function MainPage({navigation}) {
                                 Please enter your current food storage capacity
                             </Text>
 
-                            <View style={styles.modalInputContainer}>
+                            <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.capacityInput}
                                     value={capacity}
@@ -545,7 +669,8 @@ export default function MainPage({navigation}) {
                     </View>
                 </Modal>
 
-                {/* Donor Modal */}
+                {/* Donor Modal */
+                }
                 <Modal
                     animationType="slide"
                     transparent={true}
@@ -603,36 +728,86 @@ export default function MainPage({navigation}) {
                 </Modal>
             </SafeAreaView>
         </View>
-    );
+    )
+        ;
 }
 
 const styles = StyleSheet.create({
-    mainContainer: {
-        flex: 1,
-        backgroundColor: 'white',
-    },
     container: {
         flex: 1,
+        height: '100%',
+        backgroundColor: 'transparent',
     },
-    background: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        width: Dimensions.get('window').width,
-        height: Dimensions.get('window').height,
-    },
-    contentContainer: {
+    centeredView: {
         flex: 1,
-        padding: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '80%',
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: 'center',
+        fontSize: 16,
+    },
+    checkboxLabel: {
+        marginLeft: 10,
+        fontSize: 16,
+    },
+    circleCard: {
+        width: 150, // Adjust the size as needed
+        height: 150, // Adjust the size as needed
+        borderRadius: 75, // Half of the width/height to make it a circle
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    smallCircleCard: {
+        width: 100, // Adjust the size as needed
+        height: 100, // Adjust the size as needed
+        borderRadius: 50, // Half of the width/height to make it a circle
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    button: {
+        borderRadius: 5,
+        padding: 10,
+        elevation: 2,
+        minWidth: 100,
+    },
+    cancelButton: {
+        backgroundColor: '#ff4444',
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        backgroundColor: 'white', // Changed from rgba with transparency
+        padding: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
         shadowColor: '#000',
@@ -654,21 +829,7 @@ const styles = StyleSheet.create({
     icon: {
         marginLeft: 15,
     },
-    searchInputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'white',
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        marginVertical: 16,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 1},
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    searchInput: {
+    input: {
         flex: 1,
         marginLeft: 10,
         fontSize: 16,
@@ -677,16 +838,14 @@ const styles = StyleSheet.create({
         paddingVertical: 0,
         selectionColor: '#3949AB',
     },
-    scrollContent: {
-        paddingBottom: 80,
-    },
     metricsContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
+        marginVertical: 10,
         marginBottom: 30,
+        paddingHorizontal: 16,
         gap: 12,
-        marginTop: 20,
     },
     metricCard: {
         borderRadius: 16,
@@ -695,15 +854,8 @@ const styles = StyleSheet.create({
         shadowOffset: {width: 0, height: 6},
         shadowOpacity: 0.15,
         shadowRadius: 12,
-        overflow: 'hidden',
-    },
-    metricGradient: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 12,
+        margin: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
     },
     smallMetricCard: {
         width: 90,
@@ -729,71 +881,37 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: '500',
     },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#303F9F',
-        marginBottom: 16,
-        marginLeft: 4,
-    },
-    recommendationsSection: {
-        marginTop: 16,
-    },
-    loadingContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-    },
-    loadingText: {
-        marginTop: 12,
-        fontSize: 16,
-        color: '#666',
-    },
-    noMatchesText: {
-        textAlign: 'center',
-        fontSize: 16,
-        color: '#666',
-        marginVertical: 24,
-    },
-    urgentCard: {
-        backgroundColor: 'white',
-        borderRadius: 16,
-        marginBottom: 16,
-        padding: 16,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.8)',
-    },
-    combinedCardContent: {
-        flexDirection: 'row',
-        borderRadius: 15,
-        overflow: 'hidden',
-    },
-    cardHalf: {
+    urgentContainer: {
         flex: 1,
-        padding: 16,
+        marginHorizontal: 15,
+        marginBottom: 80,
     },
-    cardDivider: {
-        width: 1,
-        backgroundColor: '#e2e8f0',
-        marginVertical: 16,
+    urgentLabelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 5,
+        marginLeft: -15,
     },
-    cardSectionTitle: {
-        fontSize: 12,
-        fontWeight: '800',
-        letterSpacing: 1,
-        color: '#666',
-        marginBottom: 8,
+    urgentLabel: {
+        color: 'red',
+        fontWeight: 'bold',
+        marginLeft: 5,
     },
-    cardOrganizationName: {
+    urgentImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 10,
+    },
+    urgentTitle: {
         fontSize: 16,
-        fontWeight: '600',
-        color: '#2d3748',
-        lineHeight: 24,
+        fontWeight: 'bold',
+        marginVertical: 5,
+    },
+    cardActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 10,
     },
     detailsButton: {
         backgroundColor: '#3949AB',
@@ -813,26 +931,12 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 14,
     },
-    viewMoreButton: {
-        backgroundColor: '#4A4A8A',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginVertical: 8,
-    },
-    viewMoreButtonText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
-    },
     bottomNav: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
         backgroundColor: 'white',
-        padding: 12,
-        paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+        paddingTop: 12,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         shadowColor: '#000',
@@ -840,39 +944,132 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.08,
         shadowRadius: 8,
         elevation: 8,
-        // Add these properties to extend to bottom
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 10,
+        borderTopWidth: 0,
+        paddingBottom: Platform.OS === 'ios' ? 34 : 12,
+        marginBottom: -40,
+        paddingHorizontal: 16,
+        width: '100%',
     },
     navItem: {
         alignItems: 'center',
         paddingHorizontal: 16,
+        paddingBottom: Platform.OS === 'ios' ? 0 : 0,
     },
     navLabel: {
         fontSize: 12,
+        color: 'gray',
+    },
+    background: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height
+    },
+    urgentCard: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        marginVertical: 10,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 8},
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 8,
+        transform: [{translateY: -2}],
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.8)',
+    },
+    cardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    urgentImageLeft: {
+        width: 160,
+        height: 80,
+        flex: "auto",
+        borderRadius: 10,
+        marginRight: 10,
+    },
+    cardText: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    recommendationsButton: {
+        backgroundColor: '#4A4A8A',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginVertical: 10,
+        marginBottom: 30,
+    },
+    recommendationsButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    metricBackground: {
+        width: 100,
+        height: 100,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'red',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+    },
+    combinedCardContent: {
+        flexDirection: 'row',
+        borderRadius: 15,
+        overflow: 'hidden',
+    },
+    cardHalf: {
+        flex: 1,
+        padding: 16,
+    },
+    cardDivider: {
+        width: 1,
+        backgroundColor: '#e2e8f0',
+        marginVertical: 16,
+    },
+    cardTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#2d3748',
+        marginBottom: 6,
+    },
+    foodTypesText: {
+        fontSize: 12,
         color: '#666',
-        marginTop: 4,
+        marginBottom: 5,
+    },
+    lastUpdatedText: {
+        fontSize: 11,
+        color: '#888',
+        fontStyle: 'italic',
+    },
+    cardSectionTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 1,
+        color: '#666',
+        marginBottom: 8,
+    },
+    cardOrganizationName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#2d3748',
+        lineHeight: 24,
     },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    modalView: {
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 10,
-        width: '90%',
-        maxWidth: 480,
     },
     modalTitle: {
         fontSize: 24,
@@ -888,7 +1085,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 22,
     },
-    modalInputContainer: {
+    inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F7FAFC',
@@ -898,59 +1095,54 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         marginBottom: 24,
         width: '100%',
+    },
+    capacityInput: {
+        flex: 1,
+        fontSize: 18,
+        padding: 12,
+        color: '#2D3748',
+    },
+    unitText: {
+        fontSize: 16,
+        color: '#4A5568',
+        fontWeight: '500',
+    },
+    foodTypesContainer: {
+        width: '100%',
+        marginBottom: 16,
+    },
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        width: '100%',
+        paddingHorizontal: 4,
+    },
+    checkbox: {
+        marginRight: 12,
+        borderRadius: 4,
+        borderWidth: 2,
+        borderColor: '#3949AB',
+    },
+    submitButton: {
+        backgroundColor: '#3949AB',
+        paddingVertical: 14,
+        paddingHorizontal: 32,
+        borderRadius: 12,
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
         },
-        capacityInput: {
-            flex: 1,
-            fontSize: 18,
-            padding: 12,
-            color: '#2D3748',
-        },
-        unitText: {
-            fontSize: 16,
-            color: '#4A5568',
-            fontWeight: '500',
-        },
-        foodTypesContainer: {
-            width: '100%',
-            marginBottom: 16,
-        },
-        checkboxContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 12,
-            width: '100%',
-            paddingHorizontal: 4,
-        },
-        checkbox: {
-            marginRight: 12,
-            borderRadius: 4,
-            borderWidth: 2,
-            borderColor: '#3949AB',
-        },
-        checkboxLabel: {
-            fontSize: 16,
-            color: '#4A5568',
-            flex: 1,
-        },
-        submitButton: {
-            backgroundColor: '#3949AB',
-            paddingVertical: 14,
-            paddingHorizontal: 32,
-            borderRadius: 12,
-            width: '100%',
-            shadowColor: '#000',
-            shadowOffset: {
-                width: 0,
-                height: 2,
-            },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-        },
-        submitButtonText: {
-            color: 'white',
-            fontSize: 16,
-            fontWeight: '600',
-            textAlign: 'center',
-        },
-    });
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    submitButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+});
