@@ -27,6 +27,12 @@ interface RecipientDetails {
 interface DonorDetails {
   food_types?: Record<string, boolean>;
   lastUpdated?: string;
+  location?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
 }
 
 export default function DetailsPage() {
@@ -222,6 +228,19 @@ export default function DetailsPage() {
             <View className="bg-white rounded-xl p-4 shadow-lg shadow-black/5">
               <View className="my-2">
                 <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
+                  Address
+                </Text>
+                <Text className="text-base text-[#4A5568] leading-6 font-medium">
+                  {donorDetails?.location
+                    ? `${donorDetails.location.street}\n${donorDetails.location.city}, ${donorDetails.location.state} ${donorDetails.location.zipCode}`
+                    : "No address available"}
+                </Text>
+              </View>
+
+              <View className="h-[1px] bg-[#e2e8f0] my-3" />
+
+              <View className="my-2">
+                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
                   Food Types Available
                 </Text>
                 <View className="mt-1">
@@ -239,19 +258,6 @@ export default function DetailsPage() {
                       )
                   )}
                 </View>
-              </View>
-
-              <View className="h-[1px] bg-[#e2e8f0] my-3" />
-
-              <View className="my-2">
-                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
-                  Last Updated
-                </Text>
-                <Text className="text-base text-[#4A5568] leading-6 font-medium">
-                  {donorDetails.lastUpdated
-                    ? new Date(donorDetails.lastUpdated).toLocaleDateString()
-                    : "N/A"}
-                </Text>
               </View>
             </View>
           )}

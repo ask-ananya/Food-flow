@@ -283,24 +283,12 @@ export default function MainPage() {
 
     let recs = [],
       dons = [];
-    /*
     let data = await (
       await fetch(
         `https://matching-79369524935.us-east1.run.app/${authUser.id}`
       )
     ).json();
-    */
-
-    let data = [
-      [
-        "1649f05f-37ae-47ea-bb76-b6f1c2d70364",
-        "4e94a74b-698a-45ff-aed6-63b6f0c15fdb",
-      ],
-      [
-        "1649f05f-37ae-47ea-bb76-b6f1c2d70364",
-        "4e94a74b-698a-45ff-aed6-63b6f0c15fdb",
-      ],
-    ];
+    
     for (let i = 0; i < data.length; i++) {
       const { data: recipientData, error: error1 } = await supabase
         .from("users")
