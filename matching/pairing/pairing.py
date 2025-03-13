@@ -6,11 +6,11 @@ def pairing_alg(rec_df, donor_df, distanceClient):
     best_array = []
     for i, donor in donor_df.iterrows():
         best_score = float('-inf')
-        don_coords = [donor['donorDetails']['location']['coordinates']['longitude'], donor['donorDetails']['location']['coordinates']['latitude']]
+        don_coords = [donor['details']['location']['coordinates']['longitude'], donor['details']['location']['coordinates']['latitude']]
 
         for _, recipient in rec_df.iterrows():
             # Calculate duration
-            rec_coords = [recipient['recipientDetails']['location']['coordinates']['longitude'], recipient['recipientDetails']['location']['coordinates']['latitude']]
+            rec_coords = [recipient['details']['location']['coordinates']['longitude'], recipient['details']['location']['coordinates']['latitude']]
             route = distanceClient.directions([don_coords, rec_coords], profile='driving-car')
             duration = route['routes'][0]['summary']['duration'] / 60
 
@@ -19,13 +19,13 @@ def pairing_alg(rec_df, donor_df, distanceClient):
             current_score -= (duration * 10)  # Less penalty for distance, as urgency is removed
 
             # Capacity impact (Higher priority now)
-            current_score += recipient['recipientDetails']['current_capacity']
+            current_score += recipient['details']['current_capacity']
 
             # Dietary requirements
             food_match_score = 0
             for food in food_types:
-                recipient_need = recipient['recipientDetails']['dietaryRestrictions'].get(food, False)
-                donor_has = donor['donorDetails']['food_types'].get(food, False)
+                recipient_need = recipient['details']['dietaryRestrictions'].get(food, False)
+                donor_has = donor['details']['food_types'].get(food, False)
 
                 if recipient_need and not donor_has:
                     food_match_score -= 10  # Slightly stronger penalty
@@ -35,10 +35,10 @@ def pairing_alg(rec_df, donor_df, distanceClient):
             current_score += food_match_score
 
             # Dairy refrigeration penalties
-            if (donor['donorDetails']['food_types'].get('glutenFree', False) or 
-                donor['donorDetails']['food_types'].get('halal', False) or 
-                donor['donorDetails']['food_types'].get('kosher', False) or 
-                donor['donorDetails']['food_types'].get('vegetarian', False)) and not recipient['recipientDetails'].get('hasRefrigeration', False):
+            if (donor['details']['food_types'].get('glutenFree', False) or 
+                donor['details']['food_types'].get('halal', False) or 
+                donor['details']['food_types'].get('kosher', False) or 
+                donor['details']['food_types'].get('vegetarian', False)) and not recipient['details'].get('hasRefrigeration', False):
                 current_score -= 200
 
             # Operating hours
@@ -50,10 +50,10 @@ def pairing_alg(rec_df, donor_df, distanceClient):
                     h += 12
                 return h * 60 + m
 
-            donor_start = donor['donorDetails'].get('operatingHours', {}).get('start', '00:00')
-            donor_end = donor['donorDetails'].get('operatingHours', {}).get('end', '23:59')
-            recipient_start = recipient['recipientDetails'].get('operatingHours', {}).get('start', '00:00')
-            recipient_end = recipient['recipientDetails'].get('operatingHours', {}).get('end', '23:59')
+            donor_start = donor['details'].get('operatingHours', {}).get('start', '00:00')
+            donor_end = donor['details'].get('operatingHours', {}).get('end', '23:59')
+            recipient_start = recipient['details'].get('operatingHours', {}).get('start', '00:00')
+            recipient_end = recipient['details'].get('operatingHours', {}).get('end', '23:59')
 
             donor_start_min = time_to_minutes(donor_start)
             donor_end_min = time_to_minutes(donor_end)

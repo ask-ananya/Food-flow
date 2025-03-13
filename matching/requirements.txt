@@ -1,6 +1,6 @@
 flask
 gunicorn
-firebase_admin
+supabase
 pandas
 openrouteservice
 numpy

@@ -35,7 +35,7 @@ def knn_pred(best_array, indiv_df, individual_id, rec_df, donor_df, k = 3):
     """
     # Filter decisions for the target individual
     user_decisions = indiv_df[
-        (indiv_df["userType"] == "Individual") & 
+        (indiv_df["user_type"] == "individual") & 
         (indiv_df["decisions"].notna())
     ]
 
@@ -56,8 +56,8 @@ def knn_pred(best_array, indiv_df, individual_id, rec_df, donor_df, k = 3):
                 continue
                 
             # Get recipient and donor details from their IDs
-            recipient_id = decision.get("recipientId")
-            donor_id = decision.get("donorId")
+            recipient_id = decision.get("recipient")
+            donor_id = decision.get("donor")
             
             if recipient_id is None or donor_id is None:
                 continue
