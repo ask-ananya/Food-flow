@@ -9,6 +9,7 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
@@ -55,6 +56,16 @@ interface MatchedUser {
   name: string;
 }
 
+interface AcceptedTask {
+  donorId: string;
+  donorName: string;
+  recipientId: string;
+  recipientName: string;
+  donorClosingTime: string;
+  recipientOpenTime: string;
+  timestamp: string;
+}
+
 export default function MainPage() {
   const [isPublicDonor, setIsPublicDonor] = useState<boolean>(false);
   const [donorList, setDonorList] = useState<MatchedUser[]>([]);
@@ -77,15 +88,18 @@ export default function MainPage() {
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
 
   const [userType, setUserType] = useState<'donor' | 'recipient' | 'individual' | null>(null);
+  const [acceptedTasks, setAcceptedTasks] = useState<AcceptedTask[]>([]);
 
   useEffect(() => {
     checkUserTypeAndShowPopup();
     checkIfPublicRecipient();
-    //loadPublicRecipients();
-    //loadPublicDonors();
     checkIfPublicDonor();
     loadMatches();
-  }, []);
+    // For donor/recipient, load accepted tasks
+    if (userType === "donor" || userType === "recipient") {
+      loadAcceptedTasks();
+    }
+  }, [userType]);
 
   const checkIfPublicDonor = async (): Promise<void> => {
     try {
@@ -314,6 +328,151 @@ export default function MainPage() {
     setLoading(false);
   };
 
+  // Helper functions to get closing/open times (replace dummy logic as needed)
+  const getClosestDonorClosingTime = (operatingHours: any): string => {
+    // Dummy implementation – replace with actual logic based on donorDetails.operatingHours
+    return "18:00";
+  };
+
+  const getNextRecipientOpenTime = (operatingHours: any, donorCloseTime: string): string => {
+    // Dummy implementation – replace with actual logic based on recipientDetails.operatingHours
+    return "09:00";
+  };
+
+  const updateDecision = async (decisionValue: boolean) => {
+    try {
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authUser) {
+        Alert.alert("Error", "You must be logged in to make a decision.");
+        return;
+      }
+      // Fetch donor and recipient details from the current page params or state
+      const donorId = "donorId"; // Replace with actual donorId
+      const recipientId = "recipientId"; // Replace with actual recipientId
+
+      const { data: donorDetails, error: donorError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", donorId)
+        .single();
+      if (donorError) throw donorError;
+
+      const { data: recipientDetails, error: recipientError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", recipientId)
+        .single();
+      if (recipientError) throw recipientError;
+
+      if (!donorDetails || !recipientDetails) {
+        Alert.alert("Error", "Missing donor/recipient details.");
+        return;
+      }
+      // Only process accepted decisions
+      if (decisionValue) {
+        const donorCloseTime = getClosestDonorClosingTime(donorDetails.operatingHours);
+        const recipientNextOpen = getNextRecipientOpenTime(recipientDetails.operatingHours, donorCloseTime);
+        
+        // Create new accepted task object to be stored for both donor and recipient
+        const acceptedTask = {
+          donorId: donorId,
+          donorName: donorDetails.name,
+          recipientId: recipientId,
+          recipientName: recipientDetails.name,
+          donorClosingTime: donorCloseTime,
+          recipientOpenTime: recipientNextOpen,
+          timestamp: new Date().toISOString(),
+        };
+
+        // Update donor record
+        const { data: donorData, error: donorUpdateError } = await supabase
+          .from("users")
+          .select("details")
+          .eq("id", donorId)
+          .single();
+        if (donorUpdateError) throw donorUpdateError;
+        const donorAccepted = (donorData.details.accepted_tasks || []);
+        donorAccepted.push(acceptedTask);
+        const { error: updateDonorError } = await supabase
+          .from("users")
+          .update({ details: { ...donorData.details, accepted_tasks: donorAccepted } })
+          .eq("id", donorId);
+        if (updateDonorError) throw updateDonorError;
+
+        // Update recipient record
+        const { data: recipientData, error: recipientUpdateError } = await supabase
+          .from("users")
+          .select("details")
+          .eq("id", recipientId)
+          .single();
+        if (recipientUpdateError) throw recipientUpdateError;
+        const recipientAccepted = (recipientData.details.accepted_tasks || []);
+        recipientAccepted.push(acceptedTask);
+        const { error: updateRecipientError } = await supabase
+          .from("users")
+          .update({ details: { ...recipientData.details, accepted_tasks: recipientAccepted } })
+          .eq("id", recipientId);
+        if (updateRecipientError) throw updateRecipientError;
+      }
+
+      // Update decisions if required (existing functionality)
+      const { data, error } = await supabase
+        .from("users")
+        .select("decisions")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error) throw error;
+
+      const decisions = data?.decisions || [];
+      const newDecision = {
+        recipient: recipientId,
+        donor: donorId,
+        decision: decisionValue,
+        timestamp: new Date().toISOString(),
+      };
+
+      const { error: updateDecisionError } = await supabase
+        .from("users")
+        .update({ decisions: [...decisions, newDecision] })
+        .eq("id", authUser.id);
+      if (updateDecisionError) throw updateDecisionError;
+
+      Alert.alert("Success", `You have ${decisionValue ? "accepted" : "declined"} the donation.`);
+      router.push("/home");
+    } catch (error) {
+      console.error("Error updating decision:", error);
+      Alert.alert("Error", "There was an error submitting your decision.");
+    }
+  };
+
+  const loadAcceptedTasks = async () => {
+    try {
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authUser) return;
+      const { data, error } = await supabase
+        .from("users")
+        .select("details")
+        .eq("id", authUser.id)
+        .single();
+      if (error) throw error;
+      const tasks: AcceptedTask[] = data.details.accepted_tasks || [];
+      // Sort tasks by timestamp and take the last three
+      tasks.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      setAcceptedTasks(tasks.slice(-3));
+    } catch (error) {
+      console.error("Error loading accepted tasks:", error);
+    }
+  };
+
   return (
     <View className="flex-1 bg-white">
       <LinearGradient
@@ -533,122 +692,41 @@ export default function MainPage() {
                   </View>
                 ) : (
                   <>
-                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
-                      <View className="flex-row rounded-xl overflow-hidden">
-                        {/* Recipient Section */}
-                        <View className="flex-1 p-4">
-                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-                            {userType === "donor" ? "Recipient" : "Donor"}
-                          </Text>
-                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                            Edison Pepper Farms
-                          </Text>
+                    {acceptedTasks.map((task, index) => (
+                      <View key={index} className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
+                        <View className="flex-row rounded-xl overflow-hidden">
+                          <View className="flex-1 p-4">
+                            <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
+                              {userType === "donor" ? "Recipient" : "Donor"}
+                            </Text>
+                            <Text className="text-base font-semibold text-[#2d3748] leading-6">
+                              {userType === "donor" ? task.recipientName : task.donorName}
+                            </Text>
+                            <Text className="text-xs text-gray-600 mt-1">
+                              {userType === "donor"
+                                ? `Pickup at ${task.donorClosingTime}`
+                                : `Donation at ${task.recipientOpenTime}`}
+                            </Text>
+                          </View>
                         </View>
+                        <TouchableOpacity
+                          className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
+                          onPress={() =>
+                            router.push({
+                              pathname: "/details",
+                              params: {
+                                recipientName: task.recipientName,
+                                recipientId: task.recipientId,
+                                donorName: task.donorName,
+                                donorId: task.donorId,
+                              },
+                            })
+                          }
+                        >
+                          <Text className="text-white font-semibold text-sm">Details</Text>
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity
-                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
-                        onPress={() =>
-                          router.push({
-                            pathname: "/details",
-                            params: {
-                              recipientName: recipientList[0].name,
-                              recipientId: recipientList[0].id,
-                              donorName: donorList[0].name,
-                              donorId: donorList[0].id,
-                            },
-                          })
-                        }
-                      >
-                        <Text className="text-white font-semibold text-sm">Details</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
-                      <View className="flex-row rounded-xl overflow-hidden">
-                        {/* Recipient Section */}
-                        <View className="flex-1 p-4">
-                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-                            {userType === "donor" ? "Recipient" : "Donor"}
-                          </Text>
-                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                            Edison Pepper Farms
-                          </Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
-                        onPress={() =>
-                          router.push({
-                            pathname: "/details",
-                            params: {
-                              recipientName: recipientList[0].name,
-                              recipientId: recipientList[0].id,
-                              donorName: donorList[0].name,
-                              donorId: donorList[0].id,
-                            },
-                          })
-                        }
-                      >
-                        <Text className="text-white font-semibold text-sm">Details</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
-                      <View className="flex-row rounded-xl overflow-hidden">
-                        {/* Recipient Section */}
-                        <View className="flex-1 p-4">
-                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-                            {userType === "donor" ? "Recipient" : "Donor"}
-                          </Text>
-                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                            Edison Pepper Farms
-                          </Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
-                        onPress={() =>
-                          router.push({
-                            pathname: "/details",
-                            params: {
-                              recipientName: recipientList[0].name,
-                              recipientId: recipientList[0].id,
-                              donorName: donorList[0].name,
-                              donorId: donorList[0].id,
-                            },
-                          })
-                        }
-                      >
-                        <Text className="text-white font-semibold text-sm">Details</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
-                      <View className="flex-row rounded-xl overflow-hidden">
-                        {/* Recipient Section */}
-                        <View className="flex-1 p-4">
-                          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-                            {userType === "donor" ? "Recipient" : "Donor"}
-                          </Text>
-                          <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                            Edison Pepper Farms
-                          </Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
-                        onPress={() =>
-                          router.push({
-                            pathname: "/details",
-                            params: {
-                              recipientName: recipientList[0].name,
-                              recipientId: recipientList[0].id,
-                              donorName: donorList[0].name,
-                              donorId: donorList[0].id,
-                            },
-                          })
-                        }
-                      >
-                        <Text className="text-white font-semibold text-sm">Details</Text>
-                      </TouchableOpacity>
-                    </View>
+                    ))}
                   </>
                 )}
               </>
@@ -666,16 +744,11 @@ export default function MainPage() {
           animationType="slide"
           transparent={true}
           visible={recipientModalVisible}
-          onRequestClose={() => setRecipientModalVisible(false)}
+          onRequestClose={() => {}}
         >
-          <TouchableOpacity 
-            activeOpacity={1} 
-            onPress={() => setRecipientModalVisible(false)} 
-            className="flex-1 bg-black/50 justify-center items-center"
-          >
+          <View className="flex-1 bg-black/50 justify-center items-center">
             <View 
               className="m-5 bg-white rounded-2xl p-8 items-center shadow-md shadow-black/25 w-4/5"
-              onStartShouldSetResponder={() => true}
             >
               <Text className="text-2xl font-bold text-[#303F9F] mb-2 text-center">
                 Storage Capacity
@@ -716,7 +789,7 @@ export default function MainPage() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         </Modal>
 
         {/* Donor Modal */}
