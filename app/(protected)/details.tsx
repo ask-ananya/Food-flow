@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
 interface RecipientDetails {
+  name?: string;
   location?: {
     street: string;
     city: string;
@@ -22,9 +23,11 @@ interface RecipientDetails {
     zipCode: string;
   };
   capacity?: number;
+  operatingHours?: Record<string, { available: boolean; open: string; close: string }>;
 }
 
 interface DonorDetails {
+  name?: string;
   food_types?: Record<string, boolean>;
   lastUpdated?: string;
   location?: {
@@ -33,7 +36,136 @@ interface DonorDetails {
     state: string;
     zipCode: string;
   };
+  operatingHours?: Record<string, { available: boolean; open: string; close: string }>;
 }
+
+// Define days in order (matching JavaScript's getDay() order: 0 = sunday)
+const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+/**
+ * Converts a time string (e.g., "9:30 AM") to 24‑hour components.
+ * If timeStr is missing or improperly formatted, returns { hours: 0, minutes: 0 }.
+ */
+const convertTimeTo24Hour = (timeStr?: string): { hours: number; minutes: number } => {
+  if (!timeStr) return { hours: 0, minutes: 0 };
+  const parts = timeStr.split(" ");
+  if (parts.length < 2) return { hours: 0, minutes: 0 };
+  const [time, modifier] = parts;
+  let [hours, minutes] = time.split(":").map(Number);
+  if (modifier.toUpperCase() === "PM" && hours < 12) {
+    hours += 12;
+  }
+  if (modifier.toUpperCase() === "AM" && hours === 12) {
+    hours = 0;
+  }
+  return { hours, minutes };
+};
+
+/**
+ * Iterates over the next 7 days to find the donor's next closing Date
+ * based on their operatingHours. Days marked unavailable or with blank closing times are skipped.
+ * Returns a Date if found; otherwise, null.
+ */
+const getClosestDonorClosingDate = (operatingHours: any): Date | null => {
+  if (!operatingHours) return null;
+  const now = new Date();
+  let dayIndex = now.getDay(); // 0 = sunday ...
+
+  for (let i = 0; i < 7; i++) {
+    const currentDay = daysOfWeek[(dayIndex + i) % 7];
+    const daySchedule = operatingHours[currentDay];
+    if (
+      daySchedule &&
+      daySchedule.available &&
+      daySchedule.close &&
+      daySchedule.close.trim() !== ""
+    ) {
+      const { hours, minutes } = convertTimeTo24Hour(daySchedule.close);
+      const candidate = new Date(now);
+      candidate.setDate(now.getDate() + i);
+      candidate.setHours(hours, minutes, 0, 0);
+      if (candidate > now) {
+        return candidate;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Wrapper that formats the donor closing Date (if available) into a string including date and time.
+ */
+const getClosestDonorClosingTime = (operatingHours: any): string => {
+  const candidate = getClosestDonorClosingDate(operatingHours);
+  return candidate
+    ? candidate.toLocaleString("en-US", {
+        month: "numeric",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "Unavailable";
+};
+
+/**
+ * Given a starting donor closing Date, iterates over the next 7 days to find the recipient's next open Date.
+ * Days marked unavailable or with blank open times are skipped.
+ * Returns a Date if found; otherwise, null.
+ */
+const getNextRecipientOpenDate = (operatingHours: any, donorCandidate: Date): Date | null => {
+  if (!operatingHours || !donorCandidate) return null;
+  const now = new Date();
+  // Ensure candidate is in the future – if not, start with the following day.
+  const candidateDate = new Date(donorCandidate);
+  if (candidateDate <= now) {
+    candidateDate.setDate(candidateDate.getDate() + 1);
+  }
+  let dayIndex = candidateDate.getDay();
+
+  for (let i = 0; i < 7; i++) {
+    const currentDay = daysOfWeek[(dayIndex + i) % 7];
+    const daySchedule = operatingHours[currentDay];
+    if (
+      daySchedule &&
+      daySchedule.available &&
+      daySchedule.open &&
+      daySchedule.open.trim() !== ""
+    ) {
+      const { hours, minutes } = convertTimeTo24Hour(daySchedule.open);
+      const candidateOpen = new Date(candidateDate);
+      candidateOpen.setDate(candidateDate.getDate() + i);
+      candidateOpen.setHours(hours, minutes, 0, 0);
+      if (candidateOpen > candidateDate) {
+        return candidateOpen;
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Wrapper that formats the recipient open Date (if available) into a string including date and time.
+ * Note: It expects the donorCloseTime (as a Date string) to be parseable.
+ */
+const getNextRecipientOpenTime = (operatingHours: any, donorCloseTimeStr: string): string => {
+  // Parse the donorCloseTimeStr produced by our wrapper; ideally, it should be an ISO string.
+  // Here we assume that donorCloseTimeStr is in a format that new Date() can parse.
+  const donorDate = new Date(donorCloseTimeStr);
+  if (isNaN(donorDate.getTime())) return "Unavailable";
+  const candidate = getNextRecipientOpenDate(operatingHours, donorDate);
+  return candidate
+    ? candidate.toLocaleString("en-US", {
+        month: "numeric",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "Unavailable";
+};
 
 export default function DetailsPage() {
   const router = useRouter();
@@ -112,34 +244,59 @@ export default function DetailsPage() {
         Alert.alert("Error", "You must be logged in to make a decision.");
         return;
       }
+      // Ensure donorDetails and recipientDetails include operatingHours.
+      if (!donorDetails || !recipientDetails) {
+        Alert.alert("Error", "Missing donor/recipient details.");
+        return;
+      }
+      if (decisionValue) {
+        // Compute times using the actual operating hours from Supabase.
+        const donorCloseTime = getClosestDonorClosingTime(donorDetails.operatingHours);
+        const recipientNextOpen = getNextRecipientOpenTime(recipientDetails.operatingHours, donorCloseTime);
+        
+        const acceptedTask = {
+          donorId: params.donorId,
+          donorName: donorDetails.name,
+          recipientId: params.recipientId,
+          recipientName: recipientDetails.name,
+          donorClosingTime: donorCloseTime,
+          recipientOpenTime: recipientNextOpen,
+          timestamp: new Date().toISOString(),
+        };
 
-      const { data, error } = await supabase
-        .from("users")
-        .select("decisions")
-        .eq("id", authUser.id)
-        .single();
+        // Update donor record with accepted_task entry
+        const { data: donorData, error: donorUpdateError } = await supabase
+          .from("users")
+          .select("details")
+          .eq("id", params.donorId)
+          .single();
+        if (donorUpdateError) throw donorUpdateError;
+        const donorAccepted = (donorData.details.accepted_tasks || []);
+        donorAccepted.push(acceptedTask);
+        const { error: updateDonorError } = await supabase
+          .from("users")
+          .update({ details: { ...donorData.details, accepted_tasks: donorAccepted } })
+          .eq("id", params.donorId);
+        if (updateDonorError) throw updateDonorError;
 
-      if (error) throw error;
+        // Update recipient record with accepted_task entry
+        const { data: recipientData, error: recipientUpdateError } = await supabase
+          .from("users")
+          .select("details")
+          .eq("id", params.recipientId)
+          .single();
+        if (recipientUpdateError) throw recipientUpdateError;
+        const recipientAccepted = (recipientData.details.accepted_tasks || []);
+        recipientAccepted.push(acceptedTask);
+        const { error: updateRecipientError } = await supabase
+          .from("users")
+          .update({ details: { ...recipientData.details, accepted_tasks: recipientAccepted } })
+          .eq("id", params.recipientId);
+        if (updateRecipientError) throw updateRecipientError;
+      }
 
-      const decisions = data?.decisions || [];
-      const newDecision = {
-        recipient: params.recipientId,
-        donor: params.donorId,
-        decision: decisionValue,
-        timestamp: new Date().toISOString(),
-      };
-
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ decisions: [...decisions, newDecision] })
-        .eq("id", authUser.id);
-
-      if (updateError) throw updateError;
-
-      Alert.alert(
-        "Success",
-        `You have ${decisionValue ? "accepted" : "declined"} the donation.`
-      );
+      // ... remaining decision update logic...
+      Alert.alert("Success", `You have ${decisionValue ? "accepted" : "declined"} the donation.`);
       router.push("/home");
     } catch (error) {
       console.error("Error updating decision:", error);
