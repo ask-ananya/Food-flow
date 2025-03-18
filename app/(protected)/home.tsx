@@ -49,7 +49,7 @@ interface UserDetails {
 interface User {
   id: string;
   email: string;
-  user_type: 'donor' | 'recipient' | 'individual';
+  user_type: "donor" | "recipient" | "individual";
   details: UserDetails;
 }
 
@@ -91,7 +91,9 @@ export default function MainPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
 
-  const [userType, setUserType] = useState<'donor' | 'recipient' | 'individual' | null>(null);
+  const [userType, setUserType] = useState<
+    "donor" | "recipient" | "individual" | null
+  >(null);
   const [acceptedTasks, setAcceptedTasks] = useState<AcceptedTask[]>([]);
 
   useEffect(() => {
@@ -346,7 +348,10 @@ export default function MainPage() {
     return "18:00";
   };
 
-  const getNextRecipientOpenTime = (operatingHours: any, donorCloseTime: string): string => {
+  const getNextRecipientOpenTime = (
+    operatingHours: any,
+    donorCloseTime: string,
+  ): string => {
     // Dummy implementation – replace with actual logic based on recipientDetails.operatingHours
     return "09:00";
   };
@@ -386,8 +391,13 @@ export default function MainPage() {
       }
       // Only process accepted decisions
       if (decisionValue) {
-        const donorCloseTime = getClosestDonorClosingTime(donorDetails.operatingHours);
-        const recipientNextOpen = getNextRecipientOpenTime(recipientDetails.operatingHours, donorCloseTime);
+        const donorCloseTime = getClosestDonorClosingTime(
+          donorDetails.operatingHours,
+        );
+        const recipientNextOpen = getNextRecipientOpenTime(
+          recipientDetails.operatingHours,
+          donorCloseTime,
+        );
 
         // Create new accepted task object to be stored for both donor and recipient
         const acceptedTask = {
@@ -407,26 +417,34 @@ export default function MainPage() {
           .eq("id", donorId)
           .single();
         if (donorUpdateError) throw donorUpdateError;
-        const donorAccepted = (donorData.details.accepted_tasks || []);
+        const donorAccepted = donorData.details.accepted_tasks || [];
         donorAccepted.push(acceptedTask);
         const { error: updateDonorError } = await supabase
           .from("users")
-          .update({ details: { ...donorData.details, accepted_tasks: donorAccepted } })
+          .update({
+            details: { ...donorData.details, accepted_tasks: donorAccepted },
+          })
           .eq("id", donorId);
         if (updateDonorError) throw updateDonorError;
 
         // Update recipient record
-        const { data: recipientData, error: recipientUpdateError } = await supabase
-          .from("users")
-          .select("details")
-          .eq("id", recipientId)
-          .single();
+        const { data: recipientData, error: recipientUpdateError } =
+          await supabase
+            .from("users")
+            .select("details")
+            .eq("id", recipientId)
+            .single();
         if (recipientUpdateError) throw recipientUpdateError;
-        const recipientAccepted = (recipientData.details.accepted_tasks || []);
+        const recipientAccepted = recipientData.details.accepted_tasks || [];
         recipientAccepted.push(acceptedTask);
         const { error: updateRecipientError } = await supabase
           .from("users")
-          .update({ details: { ...recipientData.details, accepted_tasks: recipientAccepted } })
+          .update({
+            details: {
+              ...recipientData.details,
+              accepted_tasks: recipientAccepted,
+            },
+          })
           .eq("id", recipientId);
         if (updateRecipientError) throw updateRecipientError;
       }
@@ -454,7 +472,10 @@ export default function MainPage() {
         .eq("id", authUser.id);
       if (updateDecisionError) throw updateDecisionError;
 
-      Alert.alert("Success", `You have ${decisionValue ? "accepted" : "declined"} the donation.`);
+      Alert.alert(
+        "Success",
+        `You have ${decisionValue ? "accepted" : "declined"} the donation.`,
+      );
       router.push("/home");
     } catch (error) {
       console.error("Error updating decision:", error);
@@ -478,7 +499,10 @@ export default function MainPage() {
       if (error) throw error;
       const tasks: AcceptedTask[] = data.details.accepted_tasks || [];
       // Sort tasks by timestamp and take the last three
-      tasks.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      tasks.sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
       setAcceptedTasks(tasks.slice(-3));
     } catch (error) {
       console.error("Error loading accepted tasks:", error);
@@ -550,7 +574,7 @@ export default function MainPage() {
   };
 
   return (
-    <TouchableOpacity style={styles.mainContainer}>
+    <View style={styles.mainContainer}>
       <LinearGradient
         colors={["#F5F7FF", "#EDF0FF"]}
         style={styles.background}
@@ -675,7 +699,8 @@ export default function MainPage() {
                       {recipientList.length > 2 && (
                         <TouchableOpacity style={styles.viewMoreButton}>
                           <Text style={styles.viewMoreButtonText}>
-                            View {recipientList.length - 2} more recommendations...
+                            View {recipientList.length - 2} more
+                            recommendations...
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -683,39 +708,46 @@ export default function MainPage() {
                   ) : (
                     <>
                       {acceptedTasks.map((task, index) => (
-                          <View key={index} className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4">
-                            <View className="flex-row rounded-xl overflow-hidden">
-                              <View className="flex-1 p-4">
-                                <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-                                  {userType === "donor" ? "Recipient" : "Donor"}
-                                </Text>
-                                <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                                  {userType === "donor" ? task.recipientName : task.donorName}
-                                </Text>
-                                <Text className="text-xs text-gray-600 mt-1">
-                                  {userType === "donor"
-                                      ? `Pickup at ${task.donorClosingTime}`
-                                      : `Donation at ${task.recipientOpenTime}`}
-                                </Text>
-                              </View>
+                        <View
+                          key={index}
+                          className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4"
+                        >
+                          <View className="flex-row rounded-xl overflow-hidden">
+                            <View className="flex-1 p-4">
+                              <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
+                                {userType === "donor" ? "Recipient" : "Donor"}
+                              </Text>
+                              <Text className="text-base font-semibold text-[#2d3748] leading-6">
+                                {userType === "donor"
+                                  ? task.recipientName
+                                  : task.donorName}
+                              </Text>
+                              <Text className="text-xs text-gray-600 mt-1">
+                                {userType === "donor"
+                                  ? `Pickup at ${task.donorClosingTime}`
+                                  : `Donation at ${task.recipientOpenTime}`}
+                              </Text>
                             </View>
-                            <TouchableOpacity
-                                className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
-                                onPress={() =>
-                                    router.push({
-                                      pathname: "/details",
-                                      params: {
-                                        recipientName: task.recipientName,
-                                        recipientId: task.recipientId,
-                                        donorName: task.donorName,
-                                        donorId: task.donorId,
-                                      },
-                                    })
-                                }
-                            >
-                              <Text className="text-white font-semibold text-sm">Details</Text>
-                            </TouchableOpacity>
                           </View>
+                          <TouchableOpacity
+                            className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
+                            onPress={() =>
+                              router.push({
+                                pathname: "/details",
+                                params: {
+                                  recipientName: task.recipientName,
+                                  recipientId: task.recipientId,
+                                  donorName: task.donorName,
+                                  donorId: task.donorId,
+                                },
+                              })
+                            }
+                          >
+                            <Text className="text-white font-semibold text-sm">
+                              Details
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       ))}
                     </>
                   )}
