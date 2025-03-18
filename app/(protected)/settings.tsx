@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
-type UserType = 'donor' | 'recipient' | 'individual' | null;
+type UserType = "donor" | "recipient" | "individual" | null;
 
 interface LocationType {
   street: string;
@@ -65,10 +65,13 @@ export default function Settings() {
   // Improved error handling in loadUserData
   const loadUserData = async () => {
     try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
       if (authError) throw new Error(authError.message);
       if (!authUser) {
-        router.push('/sign-in');
+        router.push("/sign-in");
         return;
       }
 
@@ -79,20 +82,22 @@ export default function Settings() {
         .single();
 
       if (error) throw new Error(error.message);
-      if (!data) throw new Error('No user data found');
+      if (!data) throw new Error("No user data found");
 
       setUserData(data as UserData);
       setUserType(data.user_type as UserType);
 
       if (data.details) {
-        setLocation(data.details.location || {
-          street: "",
-          city: "",
-          state: "",
-          zipCode: "",
-        });
+        setLocation(
+          data.details.location || {
+            street: "",
+            city: "",
+            state: "",
+            zipCode: "",
+          },
+        );
         setOperatingHours(data.details.operatingHours || {});
-        
+
         if (data.user_type === "recipient") {
           setCapacity(data.details.capacity || "");
         } else if (data.user_type === "donor") {
@@ -103,7 +108,10 @@ export default function Settings() {
       }
     } catch (error) {
       console.error("Error loading user data:", error);
-      Alert.alert("Error", error instanceof Error ? error.message : "Failed to load user data");
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to load user data",
+      );
     }
   };
 
@@ -111,7 +119,12 @@ export default function Settings() {
   const handleSave = async () => {
     try {
       // Basic validation
-      if (!location.street || !location.city || !location.state || !location.zipCode) {
+      if (
+        !location.street ||
+        !location.city ||
+        !location.state ||
+        !location.zipCode
+      ) {
         Alert.alert("Error", "Please fill in all address fields");
         return;
       }
@@ -122,16 +135,22 @@ export default function Settings() {
       }
 
       if (userType === "donor" && (!establishmentType || !donationFrequency)) {
-        Alert.alert("Error", "Please select establishment type and donation frequency");
+        Alert.alert(
+          "Error",
+          "Please select establishment type and donation frequency",
+        );
         return;
       }
 
       setLoading(true);
 
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
       if (authError) throw new Error(authError.message);
       if (!authUser) {
-        router.push('/sign-in');
+        router.push("/sign-in");
         return;
       }
 
@@ -141,12 +160,14 @@ export default function Settings() {
           location,
           operatingHours,
           ...(userType === "recipient" ? { capacity } : {}),
-          ...(userType === "donor" ? {
-            establishmentType,
-            donationFrequency,
-            typicalDonations,
-          } : {}),
-        }
+          ...(userType === "donor"
+            ? {
+                establishmentType,
+                donationFrequency,
+                typicalDonations,
+              }
+            : {}),
+        },
       };
 
       const { error } = await supabase
@@ -161,7 +182,10 @@ export default function Settings() {
       await loadUserData(); // Reload user data after successful update
     } catch (error) {
       console.error("Error updating settings:", error);
-      Alert.alert("Error", error instanceof Error ? error.message : "Failed to update settings");
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to update settings",
+      );
     } finally {
       setLoading(false);
     }
@@ -362,7 +386,7 @@ export default function Settings() {
         )}
 
         <TouchableOpacity
-          className="bg-red-600 p-4 rounded-xl m-4 flex-row items-center justify-center shadow-md"
+          className="bg-[#7911ba] p-4 rounded-xl m-4 flex-row items-center justify-center shadow-md"
           onPress={handleSignOut}
         >
           <Ionicons

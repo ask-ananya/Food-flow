@@ -289,7 +289,6 @@ export default function SignInScreen() {
                           onChange(text);
                           setAuthError(null); // Clear error when typing
                         }}
-                        onBlur={onBlur}
                       />
                       <TouchableOpacity
                         onPress={() => setShowPassword(!showPassword)}

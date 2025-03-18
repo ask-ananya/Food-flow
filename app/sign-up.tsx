@@ -294,12 +294,14 @@ export default function SignUpScreen() {
 
     setLoading(false);
     if (authError) {
+      console.error(authError);
       Alert.alert("Error signing up", authError.message);
       return;
     }
 
     const user = authData.user;
     if (!user) {
+      console.error("failed user check RAHHHHH");
       Alert.alert("Error", "User data not returned after sign up");
       return;
     }
@@ -547,144 +549,6 @@ export default function SignUpScreen() {
     );
   };
 
-  /*const renderRecipientFields = () => (
-    <View className="space-y-6">
-      <Text className="text-xl font-bold text-gray-900">Recipient Details</Text>
-      <View className="space-y-2">
-        <Text className="text-sm font-medium text-gray-700">
-          Organization Name
-        </Text>
-        <Controller
-          control={control}
-          name="recipientDetails.name"
-          render={({ field: { onChange, value } }) => (
-            <TextInput
-              className="p-3 border rounded-lg"
-              placeholder="Organization name"
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
-      </View>
-      <View className="space-y-2">
-        <Text className="text-sm font-medium text-gray-700">Capacity</Text>
-        <Controller
-          control={control}
-          name="recipientDetails.capacity"
-          render={({ field: { onChange, value } }) => (
-            <TextInput
-              className="p-3 border rounded-lg"
-              placeholder="Square Footage"
-              value={value}
-              onChangeText={onChange}
-              keyboardType="numeric"
-            />
-          )}
-        />
-      </View>
-      <View className="space-y-2">
-        <Text className="text-sm font-medium text-gray-700">
-          Has Refrigeration
-        </Text>
-        <Controller
-          control={control}
-          name="recipientDetails.hasRefrigeration"
-          render={({ field: { onChange, value } }) => (
-            <Switch value={value} onValueChange={onChange} />
-          )}
-        />
-      </View>
-      <View className="space-y-4">
-        <Text className="text-lg font-semibold text-gray-900">Location</Text>
-        <Controller
-          control={control}
-          name="recipientDetails.location.street"
-          render={({ field: { onChange, value } }) => (
-            <TextInput
-              className="p-3 border rounded-lg mb-2"
-              placeholder="Street Address"
-              value={value}
-              onChangeText={onChange}
-            />
-          )}
-        />
-        <View className="flex-row space-x-2">
-          <View className="flex-1">
-            <Controller
-              control={control}
-              name="recipientDetails.location.city"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  className="p-3 border rounded-lg"
-                  placeholder="City"
-                  value={value}
-                  onChangeText={onChange}
-                />
-              )}
-            />
-          </View>
-          <View className="w-20">
-            <Controller
-              control={control}
-              name="recipientDetails.location.state"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  className="p-3 border rounded-lg"
-                  placeholder="State"
-                  value={value}
-                  onChangeText={onChange}
-                  maxLength={2}
-                />
-              )}
-            />
-          </View>
-          <View className="w-24">
-            <Controller
-              control={control}
-              name="recipientDetails.location.zipCode"
-              render={({ field: { onChange, value } }) => (
-                <TextInput
-                  className="p-3 border rounded-lg"
-                  placeholder="ZIP"
-                  value={value}
-                  onChangeText={onChange}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
-              )}
-            />
-          </View>
-        </View>
-      </View>
-      <View className="space-y-4">
-        <Text className="text-lg font-semibold text-gray-900">
-          Dietary Restrictions
-        </Text>
-        {Object.entries({
-          halal: "Halal",
-          kosher: "Kosher",
-          vegetarian: "Vegetarian",
-          vegan: "Vegan",
-          glutenFree: "Gluten Free",
-          dairyFree: "Dairy Free",
-        }).map(([key, label]) => (
-          <View key={key} className="flex-row items-center justify-between">
-            <Text className="text-sm font-medium text-gray-700">{label}</Text>
-            <Controller
-              control={control}
-              name={`recipientDetails.dietaryRestrictions.${key}`}
-              render={({ field: { onChange, value } }) => (
-                <Switch value={value} onValueChange={onChange} />
-              )}
-            />
-          </View>
-        ))}
-      </View>
-      <OperatingHoursSection control={control} userType="recipient" />
-    </View>
-  );*/
-
   const renderRecipientFields = () => (
     <View style={styles.detailsContainer}>
       <Text style={styles.sectionTitle}>Recipient Details</Text>
@@ -871,31 +735,34 @@ export default function SignUpScreen() {
         name={`recipientDetails.dietaryRestrictions`}
         render={({ field: { onChange, value } }) => (
           <View style={styles.restrictionsContainer}>
-            {Object.keys(value).map((restriction) => (
-              <TouchableOpacity
-                key={restriction}
-                style={[
-                  styles.restrictionButton,
-                  value[restriction] && styles.restrictionButtonActive,
-                ]}
-                onPress={() =>
-                  onChange({
-                    ...value.dietaryRestrictions,
-                    [restriction]: !value.dietaryRestrictions[restriction],
-                  })
-                }
-              >
-                <Text
+            {Object.keys(value).map((restriction) => {
+              console.log(restriction);
+              return (
+                <TouchableOpacity
+                  key={restriction}
                   style={[
-                    styles.restrictionText,
-                    value[restriction] && styles.restrictionTextActive,
+                    styles.restrictionButton,
+                    value[restriction] && styles.restrictionButtonActive,
                   ]}
+                  onPress={() =>
+                    onChange({
+                      ...value,
+                      [restriction]: !value[restriction],
+                    })
+                  }
                 >
-                  {restriction.charAt(0).toUpperCase() +
-                    restriction.slice(1).replace(/([A-Z])/g, " $1")}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.restrictionText,
+                      value[restriction] && styles.restrictionTextActive,
+                    ]}
+                  >
+                    {restriction.charAt(0).toUpperCase() +
+                      restriction.slice(1).replace(/([A-Z])/g, " $1")}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       />
