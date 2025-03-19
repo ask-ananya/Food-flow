@@ -73,145 +73,21 @@ export default function SignInScreen() {
   const onInvalid = (errors: any) =>
     Alert.alert("Validation Error", JSON.stringify(errors));
 
-  /*return (
+  return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-gray-100 dark:bg-gray-900"
+      style={styles.mainContainer}
     >
-      <SafeAreaView className="flex-1">
-        <View className="px-6 py-12 flex-1">
-          <View className="mb-8">
-            <Text className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Welcome Back
-            </Text>
-            <Text className="text-gray-600">Sign in to continue</Text>
-          </View>
+      <LinearGradient
+        colors={["#F5F7FF", "#EDF0FF"]}
+        style={styles.background}
+      />
 
-          <View className="space-y-6">
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-1">
-                Email
-              </Text>
-              <View className="relative">
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <View className="flex-row items-center border rounded-lg overflow-hidden">
-                      <View className="p-3 bg-gray-50">
-                        <MaterialIcons name="email" size={20} color="#6B7280" />
-                      </View>
-                      <TextInput
-                        className="flex-1 p-3 text-gray-900"
-                        placeholder="Enter your email"
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        value={value}
-                        onChangeText={(text) => {
-                          onChange(text);
-                          setAuthError(null); // Clear error when typing
-                        }}
-                        onBlur={onBlur}
-                      />
-                    </View>
-                  )}
-                />
-              </View>
-              {errors.email && (
-                <Text className="text-red-500 text-sm mt-1">
-                  {errors.email.message}
-                </Text>
-              )}
-            </View>
-
-            <View>
-              <Text className="text-sm font-medium text-gray-700 mb-1">
-                Password
-              </Text>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <View className="flex-row items-center border rounded-lg overflow-hidden">
-                    <View className="p-3 bg-gray-50">
-                      <MaterialIcons name="lock" size={20} color="#6B7280" />
-                    </View>
-                    <TextInput
-                      className="flex-1 p-3 text-gray-900"
-                      placeholder="Enter your password"
-                      secureTextEntry={!showPassword}
-                      value={value}
-                      onChangeText={(text) => {
-                        onChange(text);
-                        setAuthError(null); // Clear error when typing
-                      }}
-                      onBlur={onBlur}
-                    />
-                    <TouchableOpacity
-                      className="pr-3"
-                      onPress={() => setShowPassword(!showPassword)}
-                    >
-                      <MaterialIcons
-                        name={showPassword ? "visibility-off" : "visibility"}
-                        size={20}
-                        color="#6B7280"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-              {errors.password && (
-                <Text className="text-red-500 text-sm mt-1">
-                  {errors.password.message}
-                </Text>
-              )}
-            </View>
-
-            {authError && (
-              <View className="bg-red-50 p-3 rounded-lg border border-red-200">
-                <Text className="text-red-600 text-sm text-center">
-                  {authError}
-                </Text>
-              </View>
-            )}
-
-            <TouchableOpacity
-              className="bg-blue-600 py-4 rounded-lg items-center mt-4"
-              onPress={handleSubmit(onSubmit, onInvalid)}
-            >
-              <Text className="text-white font-semibold text-base">
-                Sign In
-              </Text>
-            </TouchableOpacity>
-
-            <View className="flex-row justify-center mt-6">
-              <Text className="text-gray-600">Don't have an account? </Text>
-              <TouchableOpacity>
-                <Text className="text-blue-600 font-semibold">
-                  {" "}
-                  <Link href="/sign-up">Sign Up</Link>
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
-  );
-  */
-
-  return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.mainContainer}
-      >
-        <LinearGradient
-          colors={["#F5F7FF", "#EDF0FF"]}
-          style={styles.background}
-        />
-
-        <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
           {/* Logo and Branding */}
           <View style={styles.brandContainer}>
             <Image
@@ -249,7 +125,7 @@ export default function SignInScreen() {
                         value={value}
                         onChangeText={(text) => {
                           onChange(text);
-                          setAuthError(null); // Clear error when typing
+                          setAuthError(null);
                         }}
                         onBlur={onBlur}
                       />
@@ -258,7 +134,7 @@ export default function SignInScreen() {
                 />
               </View>
               {errors.email && (
-                <Text className="text-red-500 text-sm mt-1">
+                <Text style={{ color: "red", marginTop: 4 }}>
                   {errors.email.message}
                 </Text>
               )}
@@ -287,7 +163,7 @@ export default function SignInScreen() {
                         value={value}
                         onChangeText={(text) => {
                           onChange(text);
-                          setAuthError(null); // Clear error when typing
+                          setAuthError(null);
                         }}
                       />
                       <TouchableOpacity
@@ -307,7 +183,7 @@ export default function SignInScreen() {
                 />
               </View>
               {errors.password && (
-                <Text className="text-red-500 text-sm mt-1">
+                <Text style={{ color: "red", marginTop: 4 }}>
                   {errors.password.message}
                 </Text>
               )}
@@ -332,19 +208,36 @@ export default function SignInScreen() {
               )}
             </TouchableOpacity>
 
-            <View className="flex-row justify-center mt-6">
-              <Text className="text-gray-600">Don't have an account? </Text>
+            {authError && (
+              <Text style={styles.errorText}>{authError}</Text>
+            )}
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                marginTop: 24,
+              }}
+            >
+              <Text style={{ color: "#4A5568" }}>
+                Don't have an account?
+              </Text>
               <TouchableOpacity>
-                <Text className="text-blue-600 font-semibold">
-                  {" "}
+                <Text
+                  style={{
+                    color: "#3949AB",
+                    fontWeight: "600",
+                    marginLeft: 4,
+                  }}
+                >
                   <Link href="/sign-up">Sign Up</Link>
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -480,5 +373,10 @@ const styles = StyleSheet.create({
   signupLink: {
     color: "#3949AB",
     fontWeight: "600",
+  },
+  errorText: {
+    color: "red",
+    textAlign: "center",
+    marginTop: 8,
   },
 });

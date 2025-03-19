@@ -1113,7 +1113,7 @@ export default function SignUpScreen() {
                         style={styles.inputIcon}
                       />
                       <Text style={styles.dropdownText}>
-                        {value ? value : "Select Account Type"}
+                        {value ? String(value).charAt(0).toUpperCase() + String(value).slice(1) : "Select Account Type"}
                       </Text>
                       <Ionicons name="chevron-down" size={20} color="#666" />
                     </TouchableOpacity>
