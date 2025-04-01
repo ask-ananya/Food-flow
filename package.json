@@ -58,6 +58,7 @@
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@types/react": "~18.3.12",
+    "lightningcss-darwin-arm64": "^1.29.3",
     "typescript": "^5.3.3"
   },
   "private": true

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "food-flow",
-    "slug": "food-flow",
+    "name": "TSAComp2025: FarmerFlow",
+    "slug": "farmer-flow",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
