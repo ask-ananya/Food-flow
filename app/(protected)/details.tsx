@@ -263,6 +263,7 @@ export default function DetailsPage() {
           recipientOpenTime: recipientNextOpen,
           timestamp: new Date().toISOString(),
         };
+
         // Update donor record with accepted_task entry
         const { data: donorData, error: donorUpdateError } = await supabase
           .from("users")
@@ -277,6 +278,7 @@ export default function DetailsPage() {
           .update({ details: { ...donorData.details, accepted_tasks: donorAccepted } })
           .eq("id", params.donorId);
         if (updateDonorError) throw updateDonorError;
+
         // Update recipient record with accepted_task entry
         const { data: recipientData, error: recipientUpdateError } = await supabase
           .from("users")
@@ -292,6 +294,7 @@ export default function DetailsPage() {
           .eq("id", params.recipientId);
         if (updateRecipientError) throw updateRecipientError;
       }
+
       // ... remaining decision update logic...
       Alert.alert("Success", `You have ${decisionValue ? "accepted" : "declined"} the donation.`);
       router.push("/home");
