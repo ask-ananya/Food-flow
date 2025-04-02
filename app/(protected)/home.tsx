@@ -600,20 +600,6 @@ export default function MainPage() {
         {/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>FoodFlow</Text>
-          <View style={styles.headerIcons}>
-            <Ionicons
-              name="person-circle-outline"
-              size={30}
-              color="#303F9F"
-              style={styles.icon}
-            />
-            <Ionicons
-              name="notifications-outline"
-              size={24}
-              color="#303F9F"
-              style={styles.icon}
-            />
-          </View>
         </View>
 
         <View style={styles.contentContainer}>
@@ -907,7 +893,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,

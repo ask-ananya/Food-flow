@@ -105,6 +105,13 @@ const recipientDetailsSchema = z.object({
   operatingHours: operatingHoursSchema,
 });
 
+const farmerDetailsSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  area: z.string().min(1, "Capacity is required"),
+  location: locationSchema,
+  operatingHours: operatingHoursSchema,
+});
+
 // Base schema for common fields.
 // We declare donorDetails and recipientDetails as z.any() so they don't get validated automatically.
 const signUpSchema = z
@@ -112,9 +119,10 @@ const signUpSchema = z
     email: z.string().email("Please enter a valid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
-    userType: z.enum(["individual", "donor", "recipient"]),
+    userType: z.enum(["farmer", "donor", "recipient"]),
     donorDetails: z.any(),
     recipientDetails: z.any(),
+    farmerDetails: z.any(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -182,7 +190,7 @@ export default function SignUpScreen() {
       email: "",
       password: "",
       confirmPassword: "",
-      userType: "individual",
+      userType: "farmer",
       donorDetails: {
         name: "",
         establishmentType: "",
@@ -271,6 +279,8 @@ export default function SignUpScreen() {
       details = data.donorDetails;
     } else if (userType === "recipient") {
       details = data.recipientDetails;
+    } else {
+      details = data.farmerDetails;
     }
 
     if (details && details.location) {
@@ -772,6 +782,163 @@ export default function SignUpScreen() {
     </View>
   );
 
+  const renderFarmerFields = () => (
+    <View style={styles.detailsContainer}>
+      <Text style={styles.sectionTitle}>Farmer Details</Text>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Organization Name</Text>
+        <View style={styles.inputContainer}>
+          <Controller
+            control={control}
+            name="farmerDetails.name"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <Ionicons
+                  name="business-outline"
+                  size={20}
+                  color="#666"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter organization name"
+                  placeholderTextColor="#A0AEC0"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              </>
+            )}
+          />
+        </View>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Area (acre)</Text>
+        <View style={styles.inputContainer}>
+          <Controller
+            control={control}
+            name="farmerDetails.area"
+            render={({ field: { onChange, value } }) => (
+              <>
+                <Ionicons
+                  name="cube-outline"
+                  size={20}
+                  color="#666"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter storage capacity"
+                  placeholderTextColor="#A0AEC0"
+                  value={value}
+                  onChangeText={onChange}
+                  keyboardType="numeric"
+                />
+              </>
+            )}
+          />
+        </View>
+      </View>
+
+      <>
+        <Text style={styles.sectionSubtitle}>Location Details</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Street Address</Text>
+          <Controller
+            control={control}
+            name="farmerDetails.location.street"
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="location-outline"
+                  size={20}
+                  color="#666"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter street address"
+                  placeholderTextColor="#A0AEC0"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              </View>
+            )}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>City</Text>
+          <Controller
+            control={control}
+            name="farmerDetails.location.city"
+            render={({ field: { onChange, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons
+                  name="business-outline"
+                  size={20}
+                  color="#666"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter city"
+                  placeholderTextColor="#A0AEC0"
+                  value={value}
+                  onChangeText={onChange}
+                />
+              </View>
+            )}
+          />
+        </View>
+        <View style={styles.addressRow}>
+          <View style={[styles.inputGroup, styles.stateInput]}>
+            <Text style={styles.inputLabel}>State</Text>
+            <Controller
+              control={control}
+              name="farmerDetails.location.state"
+              render={({ field: { onChange, value } }) => (
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="State"
+                    placeholderTextColor="#A0AEC0"
+                    value={value}
+                    autoCapitalize="characters"
+                    maxLength={2}
+                    onChangeText={onChange}
+                  />
+                </View>
+              )}
+            />
+          </View>
+          <View style={[styles.inputGroup, styles.zipInput]}>
+            <Text style={styles.inputLabel}>ZIP Code</Text>
+            <Controller
+              control={control}
+              name="farmerDetails.location.zipCode"
+              render={({ field: { onChange, value } }) => (
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="00000"
+                    placeholderTextColor="#A0AEC0"
+                    value={value}
+                    keyboardType="numeric"
+                    maxLength={5}
+                    onChangeText={onChange}
+                  />
+                </View>
+              )}
+            />
+          </View>
+        </View>
+      </>
+
+      <OperatingHoursSection control={control} userType="donor" />
+    </View>
+  );
+
   /*return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1149,20 +1316,20 @@ export default function SignUpScreen() {
                           <TouchableOpacity
                             style={styles.dropdownItem}
                             onPress={() => {
-                              onChange("individual");
+                              onChange("farmer");
                               setShowUserTypeDropdown(false);
                             }}
                           >
                             <Text
                               style={[
                                 styles.dropdownItemText,
-                                value === "individual" &&
+                                value === "farmer" &&
                                   styles.dropdownItemTextSelected,
                               ]}
                             >
-                              Individual
+                              Farmer
                             </Text>
-                            {value === "individual" && (
+                            {value === "farmer" && (
                               <Ionicons
                                 name="checkmark"
                                 size={20}
@@ -1185,7 +1352,7 @@ export default function SignUpScreen() {
                                   styles.dropdownItemTextSelected,
                               ]}
                             >
-                              Recipient Organization
+                              Recipient
                             </Text>
                             {value === "recipient" && (
                               <Ionicons
@@ -1210,7 +1377,7 @@ export default function SignUpScreen() {
                                   styles.dropdownItemTextSelected,
                               ]}
                             >
-                              Donor Organization
+                              Donor
                             </Text>
                             {value === "donor" && (
                               <Ionicons
@@ -1242,10 +1409,10 @@ export default function SignUpScreen() {
                     <Text style={styles.tooltipTitle}>Account Types</Text>
 
                     <View style={styles.tooltipItem}>
-                      <Text style={styles.tooltipItemTitle}>Individual</Text>
+                      <Text style={styles.tooltipItemTitle}>Farmer</Text>
                       <Text style={styles.tooltipItemDescription}>
-                        Someone who will deliver food between donation centers
-                        and recipient locations.
+                        Someone who will provide food for donors and form the
+                        basis of the food supply.
                       </Text>
                     </View>
 
@@ -1282,6 +1449,7 @@ export default function SignUpScreen() {
 
             {watch("userType") === "recipient" && renderRecipientFields()}
             {watch("userType") === "donor" && renderDonorFields()}
+            {watch("userType") === "farmer" && renderFarmerFields()}
 
             <TouchableOpacity
               style={[

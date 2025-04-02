@@ -7,12 +7,14 @@ export default function Layout() {
       <Tabs.Screen
         name="home"
         options={{
+          tabBarShowLabel: false,
+
           title: "Home",
           tabBarIcon: ({ size, focused, color }) => {
             return (
               <Ionicons
                 name={focused ? "home" : "home-outline"}
-                size={24}
+                size={27}
                 color="#303F9F"
               />
             );
@@ -22,12 +24,14 @@ export default function Layout() {
       <Tabs.Screen
         name="history"
         options={{
+          tabBarShowLabel: false,
+
           title: "History",
           tabBarIcon: ({ size, focused, color }) => {
             return (
               <Ionicons
                 name={focused ? "time" : "time-outline"}
-                size={24}
+                size={27}
                 color="#303F9F"
               />
             );
@@ -38,11 +42,12 @@ export default function Layout() {
         name="settings"
         options={{
           title: "Settings",
+          tabBarShowLabel: false,
           tabBarIcon: ({ size, focused, color }) => {
             return (
               <Ionicons
                 name={focused ? "settings" : "settings-outline"}
-                size={24}
+                size={27}
                 color="#303F9F"
               />
             );

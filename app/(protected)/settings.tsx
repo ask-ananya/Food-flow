@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
-type UserType = "donor" | "recipient" | "individual" | null;
+type UserType = "donor" | "recipient" | "farmer" | null;
 
 interface LocationType {
   street: string;
@@ -29,6 +29,7 @@ interface UserDetails {
   establishmentType?: string;
   donationFrequency?: string;
   typicalDonations?: string;
+  area?: string;
 }
 
 interface UserData {
@@ -54,6 +55,7 @@ export default function Settings() {
   });
   const [operatingHours, setOperatingHours] = useState<Record<string, any>>({});
   const [capacity, setCapacity] = useState("");
+  const [area, setArea] = useState(""); // Added for farmer type, if needed
   const [establishmentType, setEstablishmentType] = useState("");
   const [donationFrequency, setDonationFrequency] = useState("");
   const [typicalDonations, setTypicalDonations] = useState("");
@@ -94,7 +96,7 @@ export default function Settings() {
             city: "",
             state: "",
             zipCode: "",
-          },
+          }
         );
         setOperatingHours(data.details.operatingHours || {});
 
@@ -104,13 +106,15 @@ export default function Settings() {
           setEstablishmentType(data.details.establishmentType || "");
           setDonationFrequency(data.details.donationFrequency || "");
           setTypicalDonations(data.details.typicalDonations || "");
+        } else {
+          setArea(data.details.area || ""); // For farmer type, if needed
         }
       }
     } catch (error) {
       console.error("Error loading user data:", error);
       Alert.alert(
         "Error",
-        error instanceof Error ? error.message : "Failed to load user data",
+        error instanceof Error ? error.message : "Failed to load user data"
       );
     }
   };
@@ -137,7 +141,7 @@ export default function Settings() {
       if (userType === "donor" && (!establishmentType || !donationFrequency)) {
         Alert.alert(
           "Error",
-          "Please select establishment type and donation frequency",
+          "Please select establishment type and donation frequency"
         );
         return;
       }
@@ -167,6 +171,7 @@ export default function Settings() {
                 typicalDonations,
               }
             : {}),
+          ...(userType === "farmer" ? { area } : {}),
         },
       };
 
@@ -184,7 +189,7 @@ export default function Settings() {
       console.error("Error updating settings:", error);
       Alert.alert(
         "Error",
-        error instanceof Error ? error.message : "Failed to update settings",
+        error instanceof Error ? error.message : "Failed to update settings"
       );
     } finally {
       setLoading(false);
@@ -234,157 +239,160 @@ export default function Settings() {
               Account Type
             </Text>
             <Text className="text-base text-indigo-600 font-semibold">
-              {userType || "Loading..."}
+              {userType
+                ? userType === "donor"
+                  ? "Donor"
+                  : userType === "recipient"
+                  ? "Recipient"
+                  : "Farmer"
+                : "Loading..."}
             </Text>
           </View>
         </View>
 
-        {!editMode ? (
-          <TouchableOpacity
-            className="bg-indigo-600 p-4 rounded-xl m-4 flex-row items-center justify-center shadow-md"
-            onPress={() => setEditMode(true)}
-          >
-            <Ionicons
-              name="create-outline"
-              size={20}
-              color="white"
-              className="mr-2"
-            />
-            <Text className="text-white text-base font-semibold">
-              Edit Profile
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <View className="bg-white rounded-xl p-4 m-4 shadow-md">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
-              Edit Profile
-            </Text>
+        <View className="bg-white rounded-xl p-4 m-4 shadow-md">
+          <Text className="text-lg font-semibold text-gray-800 mb-4">
+            Edit Profile
+          </Text>
 
-            <Text className="text-sm font-medium text-indigo-600 mb-1">
-              Address
-            </Text>
+          <Text className="text-sm font-medium text-indigo-600 mb-1">
+            Address
+          </Text>
+          <TextInput
+            className="bg-white border border-gray-200 rounded-lg p-3 mb-3 text-base"
+            placeholder="Street"
+            value={location.street}
+            onChangeText={(text) =>
+              setLocation((prev) => ({ ...prev, street: text }))
+            }
+          />
+          <TextInput
+            className="bg-white border border-gray-200 rounded-lg p-3 mb-3 text-base"
+            placeholder="City"
+            value={location.city}
+            onChangeText={(text) =>
+              setLocation((prev) => ({ ...prev, city: text }))
+            }
+          />
+          <View className="flex-row justify-between mb-3">
             <TextInput
-              className="bg-white border border-gray-200 rounded-lg p-3 mb-3 text-base"
-              placeholder="Street"
-              value={location.street}
+              className="bg-white border border-gray-200 rounded-lg p-3 flex-1 mr-3 text-base"
+              placeholder="State"
+              value={location.state}
+              maxLength={2}
+              autoCapitalize="characters"
               onChangeText={(text) =>
-                setLocation((prev) => ({ ...prev, street: text }))
+                setLocation((prev) => ({ ...prev, state: text }))
               }
             />
             <TextInput
-              className="bg-white border border-gray-200 rounded-lg p-3 mb-3 text-base"
-              placeholder="City"
-              value={location.city}
+              className="bg-white border border-gray-200 rounded-lg p-3 flex-2 text-base"
+              placeholder="ZIP Code"
+              value={location.zipCode}
+              keyboardType="numeric"
+              maxLength={5}
               onChangeText={(text) =>
-                setLocation((prev) => ({ ...prev, city: text }))
+                setLocation((prev) => ({ ...prev, zipCode: text }))
               }
             />
-            <View className="flex-row justify-between mb-3">
-              <TextInput
-                className="bg-white border border-gray-200 rounded-lg p-3 flex-1 mr-3 text-base"
-                placeholder="State"
-                value={location.state}
-                maxLength={2}
-                autoCapitalize="characters"
-                onChangeText={(text) =>
-                  setLocation((prev) => ({ ...prev, state: text }))
-                }
-              />
-              <TextInput
-                className="bg-white border border-gray-200 rounded-lg p-3 flex-2 text-base"
-                placeholder="ZIP Code"
-                value={location.zipCode}
-                keyboardType="numeric"
-                maxLength={5}
-                onChangeText={(text) =>
-                  setLocation((prev) => ({ ...prev, zipCode: text }))
-                }
-              />
-            </View>
-
-            {userType === "recipient" && (
-              <>
-                <Text className="text-sm font-medium text-indigo-600 mb-1">
-                  Storage Capacity
-                </Text>
-                <TextInput
-                  className="bg-white border border-gray-200 rounded-lg p-3 mb-3 text-base"
-                  placeholder="Storage Capacity"
-                  value={capacity}
-                  onChangeText={setCapacity}
-                  keyboardType="numeric"
-                />
-              </>
-            )}
-
-            {userType === "donor" && (
-              <>
-                <Text className="text-sm font-medium text-indigo-600 mb-1">
-                  Establishment Type
-                </Text>
-                <View className="bg-white border border-gray-200 rounded-lg mb-3">
-                  <Picker
-                    selectedValue={establishmentType}
-                    onValueChange={setEstablishmentType}
-                  >
-                    <Picker.Item label="Select Type" value="" />
-                    <Picker.Item label="Restaurant" value="restaurant" />
-                    <Picker.Item label="Bakery" value="bakery" />
-                    <Picker.Item label="Grocery Store" value="grocery" />
-                    <Picker.Item label="Cafe" value="cafe" />
-                    <Picker.Item label="Other" value="other" />
-                  </Picker>
-                </View>
-
-                <Text className="text-sm font-medium text-indigo-600 mb-1">
-                  Donation Frequency
-                </Text>
-                <View className="bg-white border border-gray-200 rounded-lg mb-3">
-                  <Picker
-                    selectedValue={donationFrequency}
-                    onValueChange={setDonationFrequency}
-                  >
-                    <Picker.Item label="Select Frequency" value="" />
-                    <Picker.Item label="Daily" value="daily" />
-                    <Picker.Item label="Weekly" value="weekly" />
-                    <Picker.Item label="Bi-weekly" value="biweekly" />
-                    <Picker.Item label="Monthly" value="monthly" />
-                    <Picker.Item label="As Available" value="asAvailable" />
-                  </Picker>
-                </View>
-
-                <Text className="text-sm font-medium text-indigo-600 mb-1">
-                  Typical Donations
-                </Text>
-                <TextInput
-                  className="bg-white border border-gray-200 rounded-lg p-3 h-24 text-top text-base"
-                  placeholder="Typical Donation Items and Quantities"
-                  value={typicalDonations}
-                  onChangeText={setTypicalDonations}
-                  multiline
-                  numberOfLines={3}
-                />
-              </>
-            )}
-
-            <TouchableOpacity
-              className="bg-indigo-600 p-4 rounded-xl mx-4 mt-4 flex-row items-center justify-center shadow-md"
-              onPress={handleSave}
-              disabled={loading}
-            >
-              <Ionicons
-                name="save-outline"
-                size={20}
-                color="white"
-                className="mr-2"
-              />
-              <Text className="text-white text-base font-semibold">
-                {loading ? "Saving..." : "Save Changes"}
-              </Text>
-            </TouchableOpacity>
           </View>
-        )}
 
+          {userType === "recipient" && (
+            <>
+              <Text className="text-sm font-medium text-indigo-600 mb-1">
+                Storage Capacity
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-200 rounded-lg p-3 mb-3 text-base"
+                placeholder="Storage Capacity"
+                value={capacity}
+                onChangeText={setCapacity}
+                keyboardType="numeric"
+              />
+            </>
+          )}
+
+          {userType === "farmer" && (
+            <>
+              <Text className="text-sm font-medium text-indigo-600 mb-1">
+                Area
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-200 rounded-lg p-3 mb-3 text-base"
+                placeholder="Area"
+                value={area}
+                onChangeText={setArea}
+                keyboardType="numeric"
+              />
+            </>
+          )}
+
+          {userType === "donor" && (
+            <>
+              <Text className="text-sm font-medium text-indigo-600 mb-1">
+                Establishment Type
+              </Text>
+              <View className="bg-white border border-gray-200 rounded-lg mb-3">
+                <Picker
+                  selectedValue={establishmentType}
+                  onValueChange={setEstablishmentType}
+                >
+                  <Picker.Item label="Select Type" value="" />
+                  <Picker.Item label="Restaurant" value="restaurant" />
+                  <Picker.Item label="Bakery" value="bakery" />
+                  <Picker.Item label="Grocery Store" value="grocery" />
+                  <Picker.Item label="Cafe" value="cafe" />
+                  <Picker.Item label="Other" value="other" />
+                </Picker>
+              </View>
+
+              <Text className="text-sm font-medium text-indigo-600 mb-1">
+                Donation Frequency
+              </Text>
+              <View className="bg-white border border-gray-200 rounded-lg mb-3">
+                <Picker
+                  selectedValue={donationFrequency}
+                  onValueChange={setDonationFrequency}
+                >
+                  <Picker.Item label="Select Frequency" value="" />
+                  <Picker.Item label="Daily" value="daily" />
+                  <Picker.Item label="Weekly" value="weekly" />
+                  <Picker.Item label="Bi-weekly" value="biweekly" />
+                  <Picker.Item label="Monthly" value="monthly" />
+                  <Picker.Item label="As Available" value="asAvailable" />
+                </Picker>
+              </View>
+
+              <Text className="text-sm font-medium text-indigo-600 mb-1">
+                Typical Donations
+              </Text>
+              <TextInput
+                className="bg-white border border-gray-200 rounded-lg p-3 h-24 text-top text-base"
+                placeholder="Typical Donation Items and Quantities"
+                value={typicalDonations}
+                onChangeText={setTypicalDonations}
+                multiline
+                numberOfLines={3}
+              />
+            </>
+          )}
+        </View>
+
+        <TouchableOpacity
+          className="bg-indigo-600 p-4 rounded-xl mx-4 mt-4 flex-row items-center justify-center shadow-md"
+          onPress={handleSave}
+          disabled={loading}
+        >
+          <Ionicons
+            name="save-outline"
+            size={20}
+            color="white"
+            className="mr-2"
+          />
+          <Text className="text-white text-base font-semibold">
+            {loading ? "Saving..." : "Save Changes"}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           className="bg-[#7911ba] p-4 rounded-xl m-4 flex-row items-center justify-center shadow-md"
           onPress={handleSignOut}
