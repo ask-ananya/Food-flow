@@ -7,7 +7,7 @@ export default function Layout() {
       <Tabs.Screen
         name="home"
         options={{
-          tabBarShowLabel: false,
+          tabBarShowLabel: true,
 
           title: "Home",
           tabBarIcon: ({ size, focused, color }) => {
@@ -24,7 +24,7 @@ export default function Layout() {
       <Tabs.Screen
         name="history"
         options={{
-          tabBarShowLabel: false,
+          tabBarShowLabel: true,
 
           title: "History",
           tabBarIcon: ({ size, focused, color }) => {
@@ -42,7 +42,7 @@ export default function Layout() {
         name="settings"
         options={{
           title: "Settings",
-          tabBarShowLabel: false,
+          tabBarShowLabel: true,
           tabBarIcon: ({ size, focused, color }) => {
             return (
               <Ionicons
