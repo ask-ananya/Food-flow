@@ -16,7 +16,7 @@ import React, { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
-import { router, useRouter } from "expo-router";
+import { router, useRouter, Link, useSegments } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { StyleSheet } from "react-native";
 import { ActivityIndicator } from "react-native";
@@ -84,8 +84,8 @@ export default function MainPage() {
     vegan: false,
     vegetarian: false,
   });
-  const navigation = useRouter();
-
+  const router = useRouter();
+  const segments = useSegments();
   const [recipientList, setRecipientList] = useState<MatchedUser[]>([]);
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -140,7 +140,7 @@ export default function MainPage() {
 
       if (error) throw error;
       setDonorList(
-        data.map(({ id, details: { name } }: User) => ({ id, name })),
+        data.map(({ id, details: { name } }: User) => ({ id, name }))
       );
     } catch (error) {
       console.error("Error loading public donors:", error);
@@ -313,7 +313,7 @@ export default function MainPage() {
       dons = [];
     let data = await (
       await fetch(
-        `https://matching-79369524935.us-east1.run.app/${authUser.id}`,
+        `https://matching-79369524935.us-east1.run.app/${authUser.id}`
       )
     ).json();
 
@@ -350,7 +350,7 @@ export default function MainPage() {
 
   const getNextRecipientOpenTime = (
     operatingHours: any,
-    donorCloseTime: string,
+    donorCloseTime: string
   ): string => {
     // Dummy implementation – replace with actual logic based on recipientDetails.operatingHours
     return "09:00";
@@ -392,11 +392,11 @@ export default function MainPage() {
       // Only process accepted decisions
       if (decisionValue) {
         const donorCloseTime = getClosestDonorClosingTime(
-          donorDetails.operatingHours,
+          donorDetails.operatingHours
         );
         const recipientNextOpen = getNextRecipientOpenTime(
           recipientDetails.operatingHours,
-          donorCloseTime,
+          donorCloseTime
         );
 
         // Create new accepted task object to be stored for both donor and recipient
@@ -474,7 +474,7 @@ export default function MainPage() {
 
       Alert.alert(
         "Success",
-        `You have ${decisionValue ? "accepted" : "declined"} the donation.`,
+        `You have ${decisionValue ? "accepted" : "declined"} the donation.`
       );
       router.push("/home");
     } catch (error) {
@@ -501,7 +501,7 @@ export default function MainPage() {
       // Sort tasks by timestamp and take the last three
       tasks.sort(
         (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
       setAcceptedTasks(tasks.slice(-3));
     } catch (error) {
@@ -533,20 +533,22 @@ export default function MainPage() {
             <Text style={styles.cardOrganizationName}>{donorInfo.name}</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.detailsButton}
-          onPress={() =>
-            navigation.navigate("/(protected)/details", {
-              // @ts-ignore
-              recipientName: recipientInfo.name,
-              recipientId: recipientInfo.id,
-              donorName: donorInfo.name,
-              donorId: donorInfo.id,
-            })
-          }
+        <Link
+          href={{
+            pathname: "/details",
+            params: {
+              recipientName: recipientList[0].name,
+              recipientId: recipientList[0].id,
+              donorName: donorList[0].name,
+              donorId: donorList[0].id,
+            },
+          }}
+          asChild
         >
-          <Text style={styles.detailsButtonText}>Details</Text>
-        </TouchableOpacity>
+          <TouchableOpacity className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10">
+            <Text className="text-white font-semibold text-sm">Details</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
     );
   };
@@ -569,7 +571,7 @@ export default function MainPage() {
                 : { donorName: entityInfo.name, donorId: entityInfo.id };
 
             // @ts-ignore
-            navigation.navigate("/(protected)/details", navigationParams);
+            router.navigate("/(protected)/details", navigationParams);
           }}
         >
           <Text style={styles.detailsButtonText}>Details</Text>
@@ -577,6 +579,15 @@ export default function MainPage() {
       </View>
     );
   };
+
+  if (!segments) {
+    return (
+      <View className="flex flex-row w-full justify-center">
+        <Progress.Circle size={25} indeterminate={true} />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   // @ts-ignore
   return (
@@ -692,8 +703,8 @@ export default function MainPage() {
                               renderMatchCard(
                                 recipient,
                                 donorList[index],
-                                index,
-                              ),
+                                index
+                              )
                           )
                       ) : (
                         <Text style={styles.noMatchesText}>
@@ -775,9 +786,7 @@ export default function MainPage() {
             onPress={() => setRecipientModalVisible(false)}
             style={styles.modalOverlay}
           >
-            <TouchableOpacity
-              style={styles.modalView}
-            >
+            <TouchableOpacity style={styles.modalView}>
               <Text style={styles.modalTitle}>Storage Capacity</Text>
               <Text style={styles.modalSubtitle}>
                 Please enter your current food storage capacity

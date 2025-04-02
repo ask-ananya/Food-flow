@@ -24,6 +24,7 @@ import { Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native";
 import { ActivityIndicator } from "react-native";
+import { Pressable } from "react-native";
 
 // Common schemas
 
@@ -227,7 +228,7 @@ export default function SignUpScreen() {
     try {
       const response = await fetch(
         `https://api.openrouteservice.org/geocode/search?api_key=${OPENROUTE_SERVICE_API_KEY}&text=${encodeURIComponent(
-          address,
+          address
         )}&size=1`,
         {
           method: "GET",
@@ -235,7 +236,7 @@ export default function SignUpScreen() {
             Accept:
               "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
           },
-        },
+        }
       );
 
       if (!response.ok) {
@@ -254,7 +255,7 @@ export default function SignUpScreen() {
       console.error("Geocoding error:", error);
       Alert.alert(
         "Geocoding Error",
-        "Could not find coordinates for the provided address",
+        "Could not find coordinates for the provided address"
       );
       return null;
     }
@@ -434,7 +435,7 @@ export default function SignUpScreen() {
                               />
                             )}
                           </TouchableOpacity>
-                        ),
+                        )
                       )}
                     </View>
                   </TouchableOpacity>
@@ -959,9 +960,21 @@ export default function SignUpScreen() {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
+          <Pressable
+            onPress={() => router.push("/")}
+            className="flex flex-row items-center gap-1 mb-4"
+          >
+            <Ionicons
+              name="arrow-up"
+              size={18}
+              color="gray"
+              className="-rotate-90 text-zinc-500"
+            />
+          </Pressable>
+
           <Text style={styles.pageTitle}>Create Account</Text>
           <Text style={styles.pageSubtitle}>
-            Please fill in the details below to sign up
+            Welcome to Foodflow! Please continue below to sign up.
           </Text>
 
           <View style={styles.formContainer}>
@@ -1113,7 +1126,10 @@ export default function SignUpScreen() {
                         style={styles.inputIcon}
                       />
                       <Text style={styles.dropdownText}>
-                        {value ? String(value).charAt(0).toUpperCase() + String(value).slice(1) : "Select Account Type"}
+                        {value
+                          ? String(value).charAt(0).toUpperCase() +
+                            String(value).slice(1)
+                          : "Select Account Type"}
                       </Text>
                       <Ionicons name="chevron-down" size={20} color="#666" />
                     </TouchableOpacity>

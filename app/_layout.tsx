@@ -1,14 +1,18 @@
 import "@/global.css";
-import { PortalHost } from "@rn-primitives/portal";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 
-import { Slot } from "expo-router";
+SplashScreen.preventAutoHideAsync();
 
-export default function Layout() {
+export default function RootLayout() {
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
-    <>
-      <Slot />
-      {/* Default Portal Host (one per app) */}
-      <PortalHost />
-    </>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(protected)" options={{ headerShown: false }} />
+    </Stack>
   );
 }

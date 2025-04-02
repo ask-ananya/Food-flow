@@ -24,6 +24,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ActivityIndicator } from "react-native";
 import { Dimensions } from "react-native";
 import { StyleSheet } from "react-native";
+import { Button } from "@/components/ui/button";
+import { Pressable } from "react-native";
 const signInSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
@@ -84,9 +86,28 @@ export default function SignInScreen() {
       />
 
       <SafeAreaView style={styles.container}>
+        <Pressable
+          onPress={() => {
+            router.push("/");
+          }}
+          className="flex flex-row items-center gap-1 mb-4"
+        >
+          <Ionicons
+            name="arrow-up"
+            size={18}
+            color="gray"
+            className="-rotate-90 text-zinc-500"
+          />
+        </Pressable>
+
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: 24, // Ensure the content is centered vertically
+          }}
         >
           {/* Logo and Branding */}
           <View style={styles.brandContainer}>
@@ -208,9 +229,7 @@ export default function SignInScreen() {
               )}
             </TouchableOpacity>
 
-            {authError && (
-              <Text style={styles.errorText}>{authError}</Text>
-            )}
+            {authError && <Text style={styles.errorText}>{authError}</Text>}
 
             <View
               style={{
@@ -219,9 +238,7 @@ export default function SignInScreen() {
                 marginTop: 24,
               }}
             >
-              <Text style={{ color: "#4A5568" }}>
-                Don't have an account?
-              </Text>
+              <Text style={{ color: "#4A5568" }}>Don't have an account?</Text>
               <TouchableOpacity>
                 <Text
                   style={{
@@ -266,8 +283,8 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   logo: {
-    width: 96,
-    height: 96,
+    width: 84,
+    height: 84,
     borderRadius: 48,
     borderWidth: 2,
     borderColor: "#3949AB",
