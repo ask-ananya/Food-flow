@@ -87,6 +87,7 @@ export default function MainPage() {
   const router = useRouter();
   const segments = useSegments();
   const [recipientList, setRecipientList] = useState<MatchedUser[]>([]);
+  const [marketplace, setMarketplace] = useState<any>([]); // todo change types later, too lazy rn to import types from supabase
 
   const [loading, setLoading] = useState<boolean>(true);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
@@ -101,6 +102,7 @@ export default function MainPage() {
     checkIfPublicRecipient();
     checkIfPublicDonor();
     loadMatches();
+
     // For donor/recipient, load accepted tasks
     if (userType === "donor" || userType === "recipient") {
       loadAcceptedTasks();
@@ -509,6 +511,24 @@ export default function MainPage() {
     }
   };
 
+  const loadMarketplace = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("marketplace")
+        .select("*")
+        .limit(10);
+
+      if (error) throw error;
+
+      setMarketplace(data);
+    } catch (error) {
+      console.error(
+        "Error loading marketplace (code a0f9r0asg9as09ga):",
+        error
+      );
+    }
+  };
+
   const renderMatchCard = (recipientInfo: any, donorInfo: any, index: any) => {
     // @ts-ignore
     // @ts-ignore
@@ -523,9 +543,6 @@ export default function MainPage() {
               {recipientInfo.name}
             </Text>
           </View>
-
-          {/* Divider */}
-          <View style={styles.cardDivider} />
 
           {/* Donor Section */}
           <View style={styles.cardHalf}>
@@ -620,13 +637,13 @@ export default function MainPage() {
           >
             {/* Metrics Section */}
             <View style={styles.metricsContainer}>
-              <View style={[styles.metricCard, styles.smallMetricCard]}>
+              <View style={[styles.metricCard]}>
                 <LinearGradient
                   colors={["#E8EAF6", "#C5CAE9"]}
                   style={styles.metricGradient}
                 >
                   <Text style={styles.metricNumber}>0</Text>
-                  <Text style={styles.metricLabel}>Donation{"\n"}Spots</Text>
+                  <Text style={styles.metricLabel}>Donation Spots</Text>
                 </LinearGradient>
               </View>
 
@@ -644,13 +661,13 @@ export default function MainPage() {
                 </LinearGradient>
               </View>
 
-              <View style={[styles.metricCard, styles.smallMetricCard]}>
+              <View style={[styles.metricCard]}>
                 <LinearGradient
                   colors={["#E8EAF6", "#C5CAE9"]}
                   style={styles.metricGradient}
                 >
                   <Text style={styles.metricNumber}>0</Text>
-                  <Text style={styles.metricLabel}>Drivers{"\n"}Nearby</Text>
+                  <Text style={styles.metricLabel}>Drivers Nearby</Text>
                 </LinearGradient>
               </View>
             </View>
@@ -757,6 +774,49 @@ export default function MainPage() {
                 </>
               )}
             </View>
+
+            <View>
+              <Text style={styles.sectionTitle}>Food Health Detection</Text>
+              <View style={styles.foodHealthContainer}>
+                <View style={styles.foodHealthContainerLeftHalf}>
+                  <Text style={styles.foodHealthContainerText}>
+                    Identify rotten food with Foodflow&apos;s AI algorithms to
+                    assist in healthy, sustainable donations.
+                  </Text>
+
+                  <Link
+                    href={{
+                      pathname: "/home",
+                    }}
+                    asChild
+                  >
+                    <TouchableOpacity className="mt-2 bg-[#3949AB] py-1 px-2 flex items-center flex-row rounded-lg shadow shadow-black/10">
+                      <Text className="text-white font-semibold text-sm text-left flex-1">
+                        Try today
+                      </Text>
+
+                      <Ionicons name="arrow-forward" size={18} color="white" />
+                    </TouchableOpacity>
+                  </Link>
+                </View>
+
+                <View>
+                  <Image
+                    source={require("@/assets/images/food_rotten.webp")}
+                    style={{
+                      width: 84,
+                      height: 84,
+                      borderRadius: 10,
+                      shadowOffset: { width: 0, height: 8 },
+                      shadowColor: "#000",
+                      shadowRadius: 4,
+                    }}
+                  />
+                </View>
+              </View>
+            </View>
+
+
           </ScrollView>
         </View>
 
@@ -926,7 +986,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginVertical: 16,
+    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -948,9 +1008,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 30,
-    gap: 12,
-    marginTop: 20,
+    marginBottom: 5,
+    gap: 8,
+    marginTop: 5,
   },
   metricCard: {
     borderRadius: 16,
@@ -960,6 +1020,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     overflow: "hidden",
+    flex: 1,
+    height: 70,
   },
   metricGradient: {
     width: "100%",
@@ -969,14 +1031,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 12,
   },
-  smallMetricCard: {
-    width: 90,
-    height: 90,
-  },
   primaryMetricCard: {
-    width: 120,
-    height: 120,
-    elevation: 8,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -988,10 +1043,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   metricLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#303F9F",
     textAlign: "center",
-    fontWeight: "500",
+    fontWeight: "600",
   },
   sectionTitle: {
     fontSize: 18,
@@ -1030,7 +1085,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.8)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   combinedCardContent: {
     flexDirection: "row",
@@ -1039,22 +1094,22 @@ const styles = StyleSheet.create({
   },
   cardHalf: {
     flex: 1,
-    padding: 16,
+    padding: 2,
   },
   cardDivider: {
     width: 1,
     backgroundColor: "#e2e8f0",
-    marginVertical: 16,
+    marginVertical: 8,
   },
   cardSectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
     letterSpacing: 1,
     color: "#666",
-    marginBottom: 8,
+    marginBottom: 3,
   },
   cardOrganizationName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#2d3748",
     lineHeight: 24,
@@ -1064,7 +1119,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 24,
     borderRadius: 8,
-    marginTop: 16,
+    marginTop: 8,
     alignSelf: "center",
     elevation: 2,
     shadowColor: "#000",
@@ -1076,6 +1131,23 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 14,
+  },
+  foodHealthContainer: {
+    backgroundColor: "rgba(91, 123, 214, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(91, 123, 214, 0.7)",
+    padding: 10,
+    borderRadius: 12,
+    display: "flex",
+    flexDirection: "row",
+    gap: 5,
+  },
+  foodHealthContainerText: {
+    fontWeight: "500",
+    color: "rgb(57, 73, 171)",
+  },
+  foodHealthContainerLeftHalf: {
+    flex: 1,
   },
   viewMoreButton: {
     backgroundColor: "#4A4A8A",
