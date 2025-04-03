@@ -18,16 +18,9 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
 import { router, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import {
-  AdvancedMarker,
-  APIProvider,
-  Map,
-  MapCameraChangedEvent,
-  Pin,
-  InfoWindow,
-} from "@vis.gl/react-google-maps";
+import MapView, { Marker } from "react-native-maps";
 
-const key = "AIzaSyATau3A4PvELgRx3mwGx9gOxsFqBk4pGjI";
+const key = "AIzaSyATau3A4PvELgRx3mwGx9gOxsFqBk4pGjI"; // Not needed for react-native-maps
 
 export default function Maps() {
   const [donorList, setDonorList] = useState<any>([]);
@@ -45,9 +38,9 @@ export default function Maps() {
   const loadPublicDonors = async (): Promise<void> => {
     try {
       const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("user_type", "donor");
+          .from("users")
+          .select("*")
+          .eq("user_type", "donor");
       if (error) throw error;
       setDonorList(data);
     } catch (error) {
@@ -58,9 +51,9 @@ export default function Maps() {
   const loadPublicFarmers = async (): Promise<void> => {
     try {
       const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("user_type", "farmer");
+          .from("users")
+          .select("*")
+          .eq("user_type", "farmer");
       if (error) throw error;
       setFarmerList(data);
     } catch (error) {
@@ -70,9 +63,9 @@ export default function Maps() {
 
   const loadPublicRecipients = async () => {
     const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("user_type", "recipient");
+        .from("users")
+        .select("*")
+        .eq("user_type", "recipient");
     if (error) throw error;
     setRecipientList(data);
   };
@@ -84,8 +77,8 @@ export default function Maps() {
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) *
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) *
         Math.cos(toRad(lat2)) *
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
@@ -114,10 +107,10 @@ export default function Maps() {
   const filteredMarkers = markers.filter((marker) => {
     const name = marker.details.name.toLowerCase();
     const address =
-      `${marker.details.location.street} ${marker.details.location.city}`.toLowerCase();
+        `${marker.details.location.street} ${marker.details.location.city}`.toLowerCase();
     return (
-      name.includes(searchQuery.toLowerCase()) ||
-      address.includes(searchQuery.toLowerCase())
+        name.includes(searchQuery.toLowerCase()) ||
+        address.includes(searchQuery.toLowerCase())
     );
   });
 
@@ -133,7 +126,7 @@ export default function Maps() {
       background: "#FFA500", // full color
       backgroundTint: "rgba(255,165,0,0.2)", // translucent tint
       glyph: "#874C0A",
-      icon: "leaf", // using Ionicons 'leaf' icon
+      icon: "leaf",
     },
     recipient: {
       background: "#34A853", // full color
@@ -144,179 +137,243 @@ export default function Maps() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="flex-1 bg-white max-h-[36rem]">
-        <APIProvider
-          apiKey={key}
-          onLoad={() => console.log("Maps API has loaded.")}
-        >
-          <Map
-            defaultZoom={11}
-            defaultCenter={referenceLocation}
-            mapId="8f296b347fa8f70b"
+      <View style={{ flex: 1, backgroundColor: "white" }}>
+        {/* Map Section */}
+        <View style={{ flex: 1, backgroundColor: "white", height: 360 }}>
+          <MapView
+              style={{ flex: 1 }}
+              initialRegion={{
+                latitude: referenceLocation.lat,
+                longitude: referenceLocation.lng,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
           >
             {donorList.map((donor: any) => (
-              <AdvancedMarker
-                key={donor.id}
-                position={{
-                  lat: donor.details.location.coordinates.latitude,
-                  lng: donor.details.location.coordinates.longitude,
-                }}
-                onClick={() => {
-                  setSelectedMarker(donor.id);
-                }}
-                clickable={true}
-              >
-                <Pin
-                  background={typeStyles.donor.background}
-                  glyphColor={typeStyles.donor.glyph}
-                  borderColor={"#000"}
-                />
-              </AdvancedMarker>
-            ))}
-
-            {farmerList.map((farmer: any) => (
-              <AdvancedMarker
-                key={farmer.id}
-                position={{
-                  lat: farmer.details.location.coordinates.latitude,
-                  lng: farmer.details.location.coordinates.longitude,
-                }}
-                onClick={() => {
-                  setSelectedMarker(farmer.id);
-                }}
-                clickable={true}
-              >
-                <Pin
-                  background={typeStyles.farmer.background}
-                  glyphColor={typeStyles.farmer.glyph}
-                  borderColor={"#000"}
-                />
-              </AdvancedMarker>
-            ))}
-
-            {recipientList.map((recipient: any) => (
-              <AdvancedMarker
-                key={recipient.id}
-                position={{
-                  lat: recipient.details.location.coordinates.latitude,
-                  lng: recipient.details.location.coordinates.longitude,
-                }}
-                onClick={() => {
-                  setSelectedMarker(recipient.id);
-                }}
-                clickable={true}
-              >
-                <Pin
-                  background={typeStyles.recipient.background}
-                  glyphColor={typeStyles.recipient.glyph}
-                  borderColor={"#000"}
-                />
-              </AdvancedMarker>
-            ))}
-          </Map>
-        </APIProvider>
-      </View>
-
-      <View className="w-full h-1 bg-primary rounded-xl" />
-
-      <ScrollView className="p-4 max-h-[24rem]">
-        {/* Title with marker icon */}
-        <View className="flex-row items-center mb-4">
-          <Ionicons
-            name="location-outline"
-            size={24}
-            color="#000"
-            style={{ marginRight: 8 }}
-          />
-          <Text className="text-2xl font-bold">Markers</Text>
-        </View>
-        {/* Search Bar */}
-        <View className="flex-row items-center border border-gray-300 rounded-xl mb-4 p-2">
-          <Ionicons
-            name="search-outline"
-            size={20}
-            color="gray"
-            style={{ marginRight: 8 }}
-          />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search markers..."
-            className="flex-1"
-          />
-        </View>
-
-        {/* Marker List */}
-        {filteredMarkers.length === 0 ? (
-          <Text className="text-center text-gray-500">No results found.</Text>
-        ) : (
-          filteredMarkers.map((marker) => {
-            const lat = marker.details.location.coordinates.latitude;
-            const lng = marker.details.location.coordinates.longitude;
-            const distance = haversineDistance(
-              referenceLocation.lat,
-              referenceLocation.lng,
-              lat,
-              lng
-            );
-            const driveTime = getDriveTime(distance);
-            const address = `${marker.details.location.street}, ${marker.details.location.city}`;
-            return (
-              <View
-                key={marker.id}
-                className="flex-row items-center justify-between mb-4 p-4 rounded-xl shadow"
-                style={{
-                  backgroundColor: typeStyles[marker.type].backgroundTint,
-                  borderColor: typeStyles[marker.type].background,
-                  borderWidth: 2,
-                }}
-              >
-                <View className="flex-row items-center">
-                  <Ionicons
-                    name={typeStyles[marker.type].icon}
-                    size={24}
-                    color={typeStyles[marker.type].glyph}
-                    style={{ marginRight: 8 }}
-                  />
-                  <View>
-                    <Text
-                      className="text-lg"
+                <Marker
+                    key={donor.id}
+                    coordinate={{
+                      latitude: donor.details.location.coordinates.latitude,
+                      longitude: donor.details.location.coordinates.longitude,
+                    }}
+                    onPress={() => setSelectedMarker(donor.id)}
+                >
+                  <View
                       style={{
-                        fontWeight: "500",
-                        color: typeStyles[marker.type].background,
+                        backgroundColor: typeStyles.donor.background,
+                        padding: 4,
+                        borderRadius: 4,
+                        borderColor: "#000",
+                        borderWidth: 1,
                       }}
-                    >
-                      {marker.details.name}
-                    </Text>
-                    <View className="flex-row items-center mt-1">
-                      <Ionicons
-                        name="location-outline"
-                        size={16}
-                        color="#000"
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={{ color: "#000" }}>{address}</Text>
-                    </View>
-                    <View className="flex-row items-center mt-1">
-                      <Ionicons
-                        name="car-sport-outline"
-                        size={16}
-                        color="#000"
-                        style={{ marginRight: 4 }}
-                      />
-                      <Text style={{ color: "#000" }}>
-                        {distance.toFixed(1)} miles away – approx {driveTime}{" "}
-                        min drive
-                      </Text>
-                    </View>
+                  >
+                    <Ionicons
+                        name={typeStyles.donor.icon}
+                        size={24}
+                        color={typeStyles.donor.glyph}
+                    />
                   </View>
-                </View>
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
-    </View>
+                </Marker>
+            ))}
+            {farmerList.map((farmer: any) => (
+                <Marker
+                    key={farmer.id}
+                    coordinate={{
+                      latitude: farmer.details.location.coordinates.latitude,
+                      longitude: farmer.details.location.coordinates.longitude,
+                    }}
+                    onPress={() => setSelectedMarker(farmer.id)}
+                >
+                  <View
+                      style={{
+                        backgroundColor: typeStyles.farmer.background,
+                        padding: 4,
+                        borderRadius: 8,
+                        borderColor: "#000",
+                        borderWidth: 1,
+                      }}
+                  >
+                    <Ionicons
+                        name={typeStyles.farmer.icon}
+                        size={24}
+                        color={typeStyles.farmer.glyph}
+                    />
+                  </View>
+                </Marker>
+            ))}
+            {recipientList.map((recipient: any) => (
+                <Marker
+                    key={recipient.id}
+                    coordinate={{
+                      latitude: recipient.details.location.coordinates.latitude,
+                      longitude: recipient.details.location.coordinates.longitude,
+                    }}
+                    onPress={() => setSelectedMarker(recipient.id)}
+                >
+                  <View
+                      style={{
+                        backgroundColor: typeStyles.recipient.background,
+                        padding: 4,
+                        borderRadius: 4,
+                        borderColor: "#000",
+                        borderWidth: 1,
+                      }}
+                  >
+                    <Ionicons
+                        name={typeStyles.recipient.icon}
+                        size={24}
+                        color={typeStyles.recipient.glyph}
+                    />
+                  </View>
+                </Marker>
+            ))}
+          </MapView>
+        </View>
+
+        {/* Divider */}
+        <View
+            style={{
+              width: "100%",
+              height: 4,
+              backgroundColor: "#EA4335",
+              borderRadius: 8,
+              marginVertical: 8,
+            }}
+        />
+
+        {/* Marker List Section */}
+        <ScrollView style={{ padding: 16, maxHeight: 240 }}>
+          {/* Title with marker icon */}
+          <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+          >
+            <Ionicons
+                name="location-outline"
+                size={24}
+                color="#000"
+                style={{ marginRight: 8 }}
+            />
+            <Text style={{ fontSize: 24, fontWeight: "bold" }}>Markers</Text>
+          </View>
+          {/* Search Bar */}
+          <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: "gray",
+                borderRadius: 12,
+                marginBottom: 16,
+                padding: 8,
+              }}
+          >
+            <Ionicons
+                name="search-outline"
+                size={20}
+                color="gray"
+                style={{ marginRight: 8 }}
+            />
+            <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search markers..."
+                style={{ flex: 1 }}
+            />
+          </View>
+
+          {/* Marker List */}
+          {filteredMarkers.length === 0 ? (
+              <Text style={{ textAlign: "center", color: "gray" }}>
+                No results found.
+              </Text>
+          ) : (
+              filteredMarkers.map((marker) => {
+                const lat = marker.details.location.coordinates.latitude;
+                const lng = marker.details.location.coordinates.longitude;
+                const distance = haversineDistance(
+                    referenceLocation.lat,
+                    referenceLocation.lng,
+                    lat,
+                    lng
+                );
+                const driveTime = getDriveTime(distance);
+                const address = `${marker.details.location.street}, ${marker.details.location.city}`;
+                return (
+                    <View
+                        key={marker.id}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: 16,
+                          padding: 16,
+                          borderRadius: 12,
+                          backgroundColor: typeStyles[marker.type].backgroundTint,
+                          borderColor: typeStyles[marker.type].background,
+                          borderWidth: 2,
+                        }}
+                    >
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Ionicons
+                            name={typeStyles[marker.type].icon}
+                            size={24}
+                            color={typeStyles[marker.type].glyph}
+                            style={{ marginRight: 8 }}
+                        />
+                        <View>
+                          <Text
+                              style={{
+                                fontSize: 18,
+                                fontWeight: "500",
+                                color: typeStyles[marker.type].background,
+                              }}
+                          >
+                            {marker.details.name}
+                          </Text>
+                          <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginTop: 4,
+                              }}
+                          >
+                            <Ionicons
+                                name="location-outline"
+                                size={16}
+                                color="#000"
+                                style={{ marginRight: 4 }}
+                            />
+                            <Text style={{ color: "#000" }}>{address}</Text>
+                          </View>
+                          <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginTop: 4,
+                              }}
+                          >
+                            <Ionicons
+                                name="car-sport-outline"
+                                size={16}
+                                color="#000"
+                                style={{ marginRight: 4 }}
+                            />
+                            <Text style={{ color: "#000" }}>
+                              {distance.toFixed(1)} miles away – approx {driveTime}{" "}
+                              min drive
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                );
+              })
+          )}
+        </ScrollView>
+      </View>
   );
 }
