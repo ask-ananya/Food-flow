@@ -60,6 +60,12 @@ export default function Layout() {
           href: null,
         }}
       />
+    <Tabs.Screen
+        name="marketplace"
+        options={{
+            href: null,
+        }}
+    />
     </Tabs>
   );
 }
