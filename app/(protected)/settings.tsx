@@ -405,6 +405,18 @@ export default function Settings() {
           />
           <Text className="text-white text-base font-semibold">Sign Out</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+            className="bg-red-900 p-4 rounded-xl m-4 flex-row items-center justify-center shadow-md"
+            onPress={() => router.navigate("/(protected)/marketplace")}
+        >
+          <Ionicons
+              name="log-out-outline"
+              size={20}
+              color="white"
+              className="mr-2"
+          />
+          <Text className="text-white text-base font-semibold">Test Marketplace Page</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
