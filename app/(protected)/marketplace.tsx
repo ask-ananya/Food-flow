@@ -9,10 +9,11 @@ import {
     SafeAreaView,
     ScrollView, TextInput
 } from "react-native";
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {Link, useRouter} from "expo-router";
 import {Ionicons} from "@expo/vector-icons";
 import {Picker} from "@react-native-picker/picker";
+import {supabase} from "@/lib/supabase";
 
 // define a type recipient
 type Recipient = {
@@ -28,58 +29,28 @@ type Donor = {
 export default function Marketplace() {
     let router = useRouter();
 
-    let [data, setData] = useState([
-        {
-            recipient: {
-                id: 1,
-                name: "Hope Community Kitchen",
-            },
-            donor: {
-                id: 1,
-                name: "Fresh Market Downtown",
-            },
-        },
-        {
-            recipient: {
-                id: 2,
-                name: "St. Mary's Food Bank",
-            },
-            donor: {
-                id: 2,
-                name: "Sunshine Bakery",
-            },
-        },
-        {
-            recipient: {
-                id: 3,
-                name: "Community Outreach Center",
-            },
-            donor: {
-                id: 3,
-                name: "Green Grove Market",
-            },
-        },
-        {
-            recipient: {
-                id: 4,
-                name: "Local Shelter Alliance",
-            },
-            donor: {
-                id: 4,
-                name: "Harbor Restaurant",
-            },
-        },
-        {
-            recipient: {
-                id: 5,
-                name: "City Fresh Foods",
-            },
-            donor: {
-                id: 5,
-                name: "City Fresh Foods",
-            },
-        },
-    ]);
+    const [marketplace, setMarketplace] = useState<any>([]); // todo change types later, too lazy rn to import types from supabase
+    const loadMarketplace = async () => {
+        try {
+            const {data, error} = await supabase
+                .from("marketplace")
+                .select("*")
+                .limit(10);
+
+            if (error) throw error;
+
+            setMarketplace(data);
+        } catch (error) {
+            console.error(
+                "Error loading marketplace (code a0f9r0asg9as09ga):",
+                error
+            );
+        }
+    };
+
+    useEffect(() => {
+        loadMarketplace()
+    }, [])
 
     const renderMatchCard = (recipientInfo: Recipient, donorInfo: Donor, index: any) => {
         // @ts-ignore
@@ -97,7 +68,7 @@ export default function Marketplace() {
                     </View>
 
                     {/* Divider */}
-                    <View style={styles.cardDivider} />
+                    <View style={styles.cardDivider}/>
 
                     {/* Donor Section */}
                     <View style={styles.cardHalf}>
@@ -117,7 +88,8 @@ export default function Marketplace() {
                     }}
                     asChild
                 >
-                    <TouchableOpacity className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10">
+                    <TouchableOpacity
+                        className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10">
                         <Text className="text-white font-semibold text-sm">Details</Text>
                     </TouchableOpacity>
                 </Link>
@@ -127,27 +99,77 @@ export default function Marketplace() {
 
     return (
         <SafeAreaView className="flex-1 bg-white">
-            <ScrollView className="flex-1 bg-gray-50">
-                <View className="flex-row items-center justify-between p-5 bg-white border-b border-gray-200 shadow">
-                    <TouchableOpacity
-                        className="p-2 rounded-full bg-white/80"
-                        onPress={() => router.push("/home")}
-                    >
-                        <Ionicons name="arrow-back" size={24} color="#303F9F" />
-                    </TouchableOpacity>
-                    <Text className="flex-1 text-2xl font-bold text-[#303F9F] text-center -ml-6">
-                        Marketplace
-                    </Text>
-                    <View className="w-6" />
-                </View>
-                {/* iterate through data and use render match card */}
-                <View className={"p-2"}>
-                    {data.map((match, index) => {
-                        return renderMatchCard(match.recipient, match.donor, index);
-                    })}
-                </View>
+            <View className="flex-row items-center justify-between p-5 bg-white border-b border-gray-200 shadow">
+                <TouchableOpacity
+                    className="p-2 rounded-full bg-white/80"
+                    onPress={() => router.push("/home")}
+                >
+                    <Ionicons name="arrow-back" size={24} color="#303F9F"/>
+                </TouchableOpacity>
+                <Text className="flex-1 text-2xl font-bold text-[#303F9F] text-center -ml-6">
+                    Marketplace
+                </Text>
+                <View className="w-6"/>
+            </View>
+            {/* iterate through data and use render match card */}
+            <View className={"p-2"}>
+                <ScrollView
+                    contentContainerStyle={{gap: 10}}
 
-            </ScrollView>
+                >
+                    <View className={"flex flex-row flex-wrap space-x-5"}>
+                        {marketplace.map((x: any, i: number) => {
+                            return (
+                                <View
+                                    key={`foaidsjfoadsjgag=${i}`}
+                                    style={{
+                                        ...styles.urgentCard,
+                                        ...{padding: 10, width: 200},
+                                    }}
+                                >
+                                    <Text className="text-lg font-medium">{x.name}</Text>
+                                    <Text style={styles.cardSectionTitle} className="mt-2">
+                                        DESCRIPTION
+                                    </Text>
+                                    <Text className="text-zinc-500">
+                                        {x.description.length > 100
+                                            ? x.description.substring(0, 100) + "..."
+                                            : x.description}
+                                    </Text>
+
+                                    <Text style={styles.cardSectionTitle} className="mt-2">
+                                        TRANSACTION TYPE
+                                    </Text>
+                                    <Text
+                                        className={`${
+                                            x.transaction_type === "offer"
+                                                ? "text-primary-600"
+                                                : "text-amber-600"
+                                        } font-medium`}
+                                        style={{width: "auto"}}
+                                    >
+                                        {x.transaction_type[0].toUpperCase() +
+                                            x.transaction_type.substring(1)}
+                                    </Text>
+
+                                    <TouchableOpacity
+                                        className="mt-2 bg-[#3949AB] py-1 px-2 flex items-center flex-row rounded-lg shadow shadow-black/10">
+                                        <Text className="text-white font-semibold text-sm text-left flex-1">
+                                            See listing
+                                        </Text>
+
+                                        <Ionicons
+                                            name="arrow-forward"
+                                            size={18}
+                                            color="white"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                            );
+                        })}
+                    </View>
+                </ScrollView>
+            </View>
         </SafeAreaView>
     );
 }
@@ -304,6 +326,7 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
         borderRadius: 16,
         marginBottom: 16,
+        marginHorizontal: 0,
         padding: 16,
         shadowColor: "#000",
         shadowOffset: {width: 0, height: 4},

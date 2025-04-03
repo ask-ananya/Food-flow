@@ -102,7 +102,6 @@ export default function MainPage() {
     checkIfPublicRecipient();
     checkIfPublicDonor();
     loadMatches();
-    loadMarketplace();
 
     // For donor/recipient, load accepted tasks
     if (userType === "donor" || userType === "recipient") {
@@ -817,65 +816,7 @@ export default function MainPage() {
               </View>
             </View>
 
-            <View style={{ marginTop: 16 }}>
-              <Text style={styles.sectionTitle}>Marketplace</Text>
 
-              <ScrollView
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 10 }}
-              >
-                {/* TODO add types later  */}
-                {marketplace.map((x: any, i: number) => {
-                  return (
-                    <View
-                      key={`foaidsjfoadsjgag=${i}`}
-                      style={{
-                        ...styles.urgentCard,
-                        ...{ padding: 10, width: 200 },
-                      }}
-                    >
-                      <Text className="text-lg font-medium">{x.name}</Text>
-                      <Text style={styles.cardSectionTitle} className="mt-2">
-                        DESCRIPTION
-                      </Text>
-                      <Text className="text-zinc-500">
-                        {x.description.length > 100
-                          ? x.description.substring(0, 100) + "..."
-                          : x.description}
-                      </Text>
-
-                      <Text style={styles.cardSectionTitle} className="mt-2">
-                        TRANSACTION TYPE
-                      </Text>
-                      <Text
-                        className={`${
-                          x.transaction_type === "offer"
-                            ? "text-primary-600"
-                            : "text-amber-600"
-                        } font-medium`}
-                        style={{ width: "auto" }}
-                      >
-                        {x.transaction_type[0].toUpperCase() +
-                          x.transaction_type.substring(1)}
-                      </Text>
-
-                      <TouchableOpacity className="mt-2 bg-[#3949AB] py-1 px-2 flex items-center flex-row rounded-lg shadow shadow-black/10">
-                        <Text className="text-white font-semibold text-sm text-left flex-1">
-                          See listing
-                        </Text>
-
-                        <Ionicons
-                          name="arrow-forward"
-                          size={18}
-                          color="white"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-              </ScrollView>
-            </View>
           </ScrollView>
         </View>
 
