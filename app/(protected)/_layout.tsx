@@ -39,6 +39,22 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
+        name="maps"
+        options={{
+          title: "Maps",
+          tabBarShowLabel: true,
+          tabBarIcon: ({ size, focused, color }) => {
+            return (
+              <Ionicons
+                name={focused ? "location" : "location-outline"}
+                size={27}
+                color="#303F9F"
+              />
+            );
+          },
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
@@ -60,12 +76,12 @@ export default function Layout() {
           href: null,
         }}
       />
-    <Tabs.Screen
+      <Tabs.Screen
         name="marketplace"
         options={{
-            href: null,
+          href: null,
         }}
-    />
+      />
     </Tabs>
   );
 }
