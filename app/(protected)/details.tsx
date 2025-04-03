@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
@@ -23,7 +23,10 @@ interface RecipientDetails {
     zipCode: string;
   };
   capacity?: number;
-  operatingHours?: Record<string, { available: boolean; open: string; close: string }>;
+  operatingHours?: Record<
+    string,
+    { available: boolean; open: string; close: string }
+  >;
 }
 
 interface DonorDetails {
@@ -36,17 +39,30 @@ interface DonorDetails {
     state: string;
     zipCode: string;
   };
-  operatingHours?: Record<string, { available: boolean; open: string; close: string }>;
+  operatingHours?: Record<
+    string,
+    { available: boolean; open: string; close: string }
+  >;
 }
 
 // Define days in order (matching JavaScript's getDay() order: 0 = sunday)
-const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const daysOfWeek = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
 
 /**
  * Converts a time string (e.g., "9:30 AM") to 24‑hour components.
  * If timeStr is missing or improperly formatted, returns { hours: 0, minutes: 0 }.
  */
-const convertTimeTo24Hour = (timeStr?: string): { hours: number; minutes: number } => {
+const convertTimeTo24Hour = (
+  timeStr?: string
+): { hours: number; minutes: number } => {
   if (!timeStr) return { hours: 0, minutes: 0 };
   const parts = timeStr.split(" ");
   if (parts.length < 2) return { hours: 0, minutes: 0 };
@@ -114,7 +130,10 @@ const getClosestDonorClosingTime = (operatingHours: any): string => {
  * Days marked unavailable or with blank open times are skipped.
  * Returns a Date if found; otherwise, null.
  */
-const getNextRecipientOpenDate = (operatingHours: any, donorCandidate: Date): Date | null => {
+const getNextRecipientOpenDate = (
+  operatingHours: any,
+  donorCandidate: Date
+): Date | null => {
   if (!operatingHours || !donorCandidate) return null;
   const now = new Date();
   // Ensure candidate is in the future – if not, start with the following day.
@@ -149,7 +168,10 @@ const getNextRecipientOpenDate = (operatingHours: any, donorCandidate: Date): Da
  * Wrapper that formats the recipient open Date (if available) into a string including date and time.
  * Note: It expects the donorCloseTime (as a Date string) to be parseable.
  */
-const getNextRecipientOpenTime = (operatingHours: any, donorCloseTimeStr: string): string => {
+const getNextRecipientOpenTime = (
+  operatingHours: any,
+  donorCloseTimeStr: string
+): string => {
   // Parse the donorCloseTimeStr produced by our wrapper; ideally, it should be an ISO string.
   // Here we assume that donorCloseTimeStr is in a format that new Date() can parse.
   const donorDate = new Date(donorCloseTimeStr);
@@ -178,7 +200,8 @@ export default function DetailsPage() {
     donorId: string;
   }>();
 
-  const [recipientDetails, setRecipientDetails] = useState<RecipientDetails | null>(null);
+  const [recipientDetails, setRecipientDetails] =
+    useState<RecipientDetails | null>(null);
   const [donorDetails, setDonorDetails] = useState<DonorDetails | null>(null);
 
   useEffect(() => {
@@ -251,9 +274,14 @@ export default function DetailsPage() {
       }
       if (decisionValue) {
         // Compute times using the actual operating hours from Supabase.
-        const donorCloseTime = getClosestDonorClosingTime(donorDetails.operatingHours);
-        const recipientNextOpen = getNextRecipientOpenTime(recipientDetails.operatingHours, donorCloseTime);
-        
+        const donorCloseTime = getClosestDonorClosingTime(
+          donorDetails.operatingHours
+        );
+        const recipientNextOpen = getNextRecipientOpenTime(
+          recipientDetails.operatingHours,
+          donorCloseTime
+        );
+
         const acceptedTask = {
           donorId: params.donorId,
           donorName: donorDetails.name,
@@ -270,30 +298,41 @@ export default function DetailsPage() {
           .eq("id", params.donorId)
           .single();
         if (donorUpdateError) throw donorUpdateError;
-        const donorAccepted = (donorData.details.accepted_tasks || []);
+        const donorAccepted = donorData.details.accepted_tasks || [];
         donorAccepted.push(acceptedTask);
         const { error: updateDonorError } = await supabase
           .from("users")
-          .update({ details: { ...donorData.details, accepted_tasks: donorAccepted } })
+          .update({
+            details: { ...donorData.details, accepted_tasks: donorAccepted },
+          })
           .eq("id", params.donorId);
         if (updateDonorError) throw updateDonorError;
         // Update recipient record with accepted_task entry
-        const { data: recipientData, error: recipientUpdateError } = await supabase
-          .from("users")
-          .select("details")
-          .eq("id", params.recipientId)
-          .single();
+        const { data: recipientData, error: recipientUpdateError } =
+          await supabase
+            .from("users")
+            .select("details")
+            .eq("id", params.recipientId)
+            .single();
         if (recipientUpdateError) throw recipientUpdateError;
-        const recipientAccepted = (recipientData.details.accepted_tasks || []);
+        const recipientAccepted = recipientData.details.accepted_tasks || [];
         recipientAccepted.push(acceptedTask);
         const { error: updateRecipientError } = await supabase
           .from("users")
-          .update({ details: { ...recipientData.details, accepted_tasks: recipientAccepted } })
+          .update({
+            details: {
+              ...recipientData.details,
+              accepted_tasks: recipientAccepted,
+            },
+          })
           .eq("id", params.recipientId);
         if (updateRecipientError) throw updateRecipientError;
       }
       // ... remaining decision update logic...
-      Alert.alert("Success", `You have ${decisionValue ? "accepted" : "declined"} the donation.`);
+      Alert.alert(
+        "Success",
+        `You have ${decisionValue ? "accepted" : "declined"} the donation.`
+      );
       router.push("/home");
     } catch (error) {
       console.error("Error updating decision:", error);
@@ -312,12 +351,11 @@ export default function DetailsPage() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-row items-center justify-between p-5 bg-white border-b border-[#E2E8F0] shadow-sm">
-        <TouchableOpacity
-          className="p-2 rounded-full bg-white/80"
-          onPress={() => router.push("/home")}
-        >
-          <Ionicons name="arrow-back" size={24} color="#303F9F" />
-        </TouchableOpacity>
+        <Link href="/(protected)/home">
+          <View className="p-2 rounded-full bg-white/80">
+            <Ionicons name="arrow-back" size={24} color="#303F9F" />
+          </View>
+        </Link>
         <Text className="text-2xl font-bold text-[#303F9F] flex-1 text-center -ml-6">
           Details
         </Text>
@@ -335,7 +373,10 @@ export default function DetailsPage() {
           </Text>
 
           <View className="bg-white rounded-xl shadow-lg shadow-black/5 mb-4 overflow-hidden">
-            <Image source={{ uri: params.recipientImage }} className="w-full h-[200px]" />
+            <Image
+              source={{ uri: params.recipientImage }}
+              className="w-full h-[200px]"
+            />
           </View>
 
           {recipientDetails && (
@@ -375,7 +416,10 @@ export default function DetailsPage() {
           </Text>
 
           <View className="bg-white rounded-xl shadow-lg shadow-black/5 mb-4 overflow-hidden">
-            <Image source={{ uri: params.donorImage }} className="w-full h-[200px]" />
+            <Image
+              source={{ uri: params.donorImage }}
+              className="w-full h-[200px]"
+            />
           </View>
 
           {donorDetails && (
