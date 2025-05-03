@@ -667,7 +667,7 @@ export default function MainPage() {
                   style={styles.metricGradient}
                 >
                   <Text style={styles.metricNumber}>0</Text>
-                  <Text style={styles.metricLabel}>Drivers Nearby</Text>
+                  <Text style={styles.metricLabel}>Active Donations</Text>
                 </LinearGradient>
               </View>
             </View>
@@ -815,8 +815,6 @@ export default function MainPage() {
                 </View>
               </View>
             </View>
-
-
           </ScrollView>
         </View>
 

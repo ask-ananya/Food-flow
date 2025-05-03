@@ -2,33 +2,44 @@ import {
   SafeAreaView,
   View,
   Text,
-  Modal,
   TextInput,
   TouchableOpacity,
   Platform,
   ScrollView,
-  Image,
   Dimensions,
-  Alert,
+  Keyboard,
   KeyboardAvoidingView,
+  Animated,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+import MapView, { Marker } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
 import { router, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import MapView, { Marker } from "react-native-maps";
 
 const key = "AIzaSyATau3A4PvELgRx3mwGx9gOxsFqBk4pGjI"; // Not needed for react-native-maps
 
 export default function Maps() {
-  const [donorList, setDonorList] = useState<any>([]);
-  const [recipientList, setRecipientList] = useState<any>([]);
-  const [farmerList, setFarmerList] = useState<any>([]);
-  const [selectedMarker, setSelectedMarker] = useState<any>(null);
+  const [donorList, setDonorList] = useState([]);
+  const [farmerList, setFarmerList] = useState([]);
+  const [recipientList, setRecipientList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // listen for keyboard appearance
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     loadPublicDonors();
@@ -114,7 +125,7 @@ export default function Maps() {
       address.includes(searchQuery.toLowerCase())
     );
   });
-
+  const mapFlex = keyboardVisible ? 0.6 : 0.6;
   // Color and icon mapping based on marker type
   const typeStyles = {
     donor: {
@@ -138,16 +149,18 @@ export default function Maps() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "white" }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "white" }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+    >
       {/* Map Section */}
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "white", height: 360 }}
-      >
+      <Animated.View style={{ flex: mapFlex }}>
         <MapView
           style={{ flex: 1 }}
           initialRegion={{
-            latitude: referenceLocation.lat,
-            longitude: referenceLocation.lng,
+            latitude: 40.5169,
+            longitude: -74.4063,
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           }}
@@ -231,14 +244,14 @@ export default function Maps() {
             </Marker>
           ))}
         </MapView>
-      </KeyboardAvoidingView>
+      </Animated.View>
 
       {/* Divider */}
       <View
         style={{
           width: "100%",
           height: 4,
-          backgroundColor: "#EA4335",
+          backgroundColor: "#4760c9",
           borderRadius: 8,
           marginVertical: 8,
         }}
