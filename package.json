@@ -32,6 +32,7 @@
     "@vis.gl/react-google-maps": "^1.5.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "expo": "^53.0.6",
     "expo-linear-gradient": "~14.1.4",

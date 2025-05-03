@@ -177,16 +177,13 @@ export default function Maps() {
               <View
                 style={{
                   backgroundColor: typeStyles.donor.background,
-                  padding: 4,
-                  borderRadius: 4,
-                  borderColor: "#000",
-                  borderWidth: 1,
                 }}
+                className="rounded-full p-2"
               >
                 <Ionicons
                   name={typeStyles.donor.icon}
-                  size={24}
-                  color={typeStyles.donor.glyph}
+                  size={16}
+                  color="white"
                 />
               </View>
             </Marker>
@@ -203,42 +200,36 @@ export default function Maps() {
               <View
                 style={{
                   backgroundColor: typeStyles.farmer.background,
-                  padding: 4,
-                  borderRadius: 8,
-                  borderColor: "#000",
-                  borderWidth: 1,
                 }}
+                className="rounded-full p-2"
               >
                 <Ionicons
                   name={typeStyles.farmer.icon}
-                  size={24}
-                  color={typeStyles.farmer.glyph}
+                  size={16}
+                  color="white"
                 />
               </View>
             </Marker>
           ))}
-          {recipientList.map((recipient: any) => (
+          {recipientList.map((donor: any) => (
             <Marker
-              key={recipient.id}
+              key={donor.id}
               coordinate={{
-                latitude: recipient.details.location.coordinates.latitude,
-                longitude: recipient.details.location.coordinates.longitude,
+                latitude: donor.details.location.coordinates.latitude,
+                longitude: donor.details.location.coordinates.longitude,
               }}
-              onPress={() => setSelectedMarker(recipient.id)}
+              onPress={() => setSelectedMarker(donor.id)}
             >
               <View
                 style={{
                   backgroundColor: typeStyles.recipient.background,
-                  padding: 4,
-                  borderRadius: 4,
-                  borderColor: "#000",
-                  borderWidth: 1,
                 }}
+                className="rounded-full p-2"
               >
                 <Ionicons
                   name={typeStyles.recipient.icon}
-                  size={24}
-                  color={typeStyles.recipient.glyph}
+                  size={16}
+                  color="white"
                 />
               </View>
             </Marker>

@@ -6,13 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   Platform,
-  ScrollView,
   Image,
   Dimensions,
   Alert,
+  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
@@ -67,6 +67,29 @@ interface AcceptedTask {
   recipientOpenTime: string;
   timestamp: string;
 }
+
+const AnimatedCounter = ({ end, duration = 1500, textStyle }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    // Animate from 0 to end
+    Animated.timing(animatedValue, {
+      toValue: end,
+      duration,
+      useNativeDriver: false,
+    }).start();
+
+    // Listen for updates and round down
+    const listener = animatedValue.addListener(({ value }) => {
+      setDisplayValue(Math.floor(value));
+    });
+
+    return () => animatedValue.removeListener(listener);
+  }, [end]);
+
+  return <Text style={textStyle}>{displayValue}</Text>;
+};
 
 export default function MainPage() {
   const [isPublicDonor, setIsPublicDonor] = useState<boolean>(false);
@@ -608,42 +631,43 @@ export default function MainPage() {
 
   // @ts-ignore
   return (
-    <View style={styles.mainContainer}>
+    <SafeAreaView style={styles.mainContainer} className="relative">
       <LinearGradient
-        colors={["#F5F7FF", "#EDF0FF"]}
+        colors={["#E0E0FF", "#EDF0FF"]}
         style={styles.background}
+        className="z-10"
       />
       <SafeAreaView style={styles.container}>
         {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>FoodFlow</Text>
+        <View className="w-full flex flex-col gap-y-2 px-5 py-2 pb-0">
+          <Text className="text-4xl font-bold text-primary text-center">
+            Welcome to Foodflow
+          </Text>
+          <Text className="text-center text-xl font-semibold">
+            Improving food donation for all.
+          </Text>
         </View>
-
         <View style={styles.contentContainer}>
           {/* Search Input */}
-          <View style={styles.searchInputContainer}>
-            <Ionicons name="location-outline" size={20} color="#666" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Make a donation today..."
-              placeholderTextColor="#888"
-            />
-          </View>
 
           {/* Content Section */}
-          <ScrollView
+          <View
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
             {/* Metrics Section */}
             <View style={styles.metricsContainer}>
-              <View style={[styles.metricCard]}>
+              <View style={styles.metricCard}>
                 <LinearGradient
                   colors={["#E8EAF6", "#C5CAE9"]}
                   style={styles.metricGradient}
                 >
-                  <Text style={styles.metricNumber}>0</Text>
-                  <Text style={styles.metricLabel}>Donation Spots</Text>
+                  <AnimatedCounter
+                    end={144}
+                    duration={1500}
+                    textStyle={styles.metricNumber}
+                  />
+                  <Text style={styles.metricLabel}>Total Users</Text>
                 </LinearGradient>
               </View>
 
@@ -652,170 +676,175 @@ export default function MainPage() {
                   colors={["#303F9F", "#3949AB"]}
                   style={styles.metricGradient}
                 >
-                  <Text style={[styles.metricNumber, { color: "white" }]}>
-                    0
-                  </Text>
+                  <AnimatedCounter
+                    end={763}
+                    duration={1500}
+                    textStyle={[styles.metricNumber, { color: "white" }]}
+                  />
                   <Text style={[styles.metricLabel, { color: "white" }]}>
                     Total Donations
                   </Text>
                 </LinearGradient>
               </View>
 
-              <View style={[styles.metricCard]}>
+              <View style={styles.metricCard}>
                 <LinearGradient
                   colors={["#E8EAF6", "#C5CAE9"]}
                   style={styles.metricGradient}
                 >
-                  <Text style={styles.metricNumber}>0</Text>
-                  <Text style={styles.metricLabel}>Active Donations</Text>
+                  <AnimatedCounter
+                    end={52}
+                    duration={1500}
+                    textStyle={styles.metricNumber}
+                  />
+                  <Text style={styles.metricLabel}>Active Requests</Text>
                 </LinearGradient>
               </View>
             </View>
 
-            {/* Matches/Recommendations Section */}
-            <View style={styles.recommendationsSection}>
-              <Text style={styles.sectionTitle}>Recommended Matches</Text>
-
-              {/* Loading State */}
-              {loading ? (
-                <View style={styles.loadingContainer}>
-                  <Progress.Circle
-                    size={30}
-                    indeterminate={true}
-                    color="#303F9F"
+            <View style={styles.metricsContainer}>
+              <View style={styles.metricCard}>
+                <LinearGradient
+                  colors={["#E8EAF6", "#C5CAE9"]}
+                  style={styles.metricGradient}
+                >
+                  <AnimatedCounter
+                    end={7649}
+                    duration={2100}
+                    textStyle={styles.metricNumber}
                   />
-                  <Text style={styles.loadingText}>Looking for matches...</Text>
-                </View>
-              ) : userType === null ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#303F9F" />
-                  <Text style={styles.loadingText}>Loading user data...</Text>
-                </View>
-              ) : (
-                <>
-                  {/* Individual User Match Display */}
-                  {userType === "individual" ? (
-                    <>
-                      {/* Render match cards */}
-                      {recipientList.length > 0 && donorList.length > 0 ? (
-                        recipientList
-                          .slice(0, 2)
-                          .map(
-                            (recipient, index) =>
-                              donorList[index] &&
-                              renderMatchCard(
-                                recipient,
-                                donorList[index],
-                                index
-                              )
-                          )
-                      ) : (
-                        <Text style={styles.noMatchesText}>
-                          No matches found at this time.
-                        </Text>
-                      )}
+                  <Text style={styles.metricLabel}>Meals Saved</Text>
+                </LinearGradient>
+              </View>
 
-                      {/* Show "View More" button if more than 2 recommendations */}
-                      {recipientList.length > 2 && (
-                        <TouchableOpacity style={styles.viewMoreButton}>
-                          <Text style={styles.viewMoreButtonText}>
-                            View {recipientList.length - 2} more
-                            recommendations...
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {acceptedTasks.map((task, index) => (
-                        <View
-                          key={index}
-                          className="bg-white rounded-2xl my-2.5 p-4 shadow-lg shadow-black/12 -translate-y-0.5 border border-white/80 mx-4"
-                        >
-                          <View className="flex-row rounded-xl overflow-hidden">
-                            <View className="flex-1 p-4">
-                              <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-                                {userType === "donor" ? "Recipient" : "Donor"}
-                              </Text>
-                              <Text className="text-base font-semibold text-[#2d3748] leading-6">
-                                {userType === "donor"
-                                  ? task.recipientName
-                                  : task.donorName}
-                              </Text>
-                              <Text className="text-xs text-gray-600 mt-1">
-                                {userType === "donor"
-                                  ? `Pickup at ${task.donorClosingTime}`
-                                  : `Donation at ${task.recipientOpenTime}`}
-                              </Text>
-                            </View>
-                          </View>
-                          <TouchableOpacity
-                            className="bg-[#3949AB] py-2 px-6 rounded-lg mt-4 self-center shadow shadow-black/10"
-                            onPress={() =>
-                              router.push({
-                                pathname: "/details",
-                                params: {
-                                  recipientName: task.recipientName,
-                                  recipientId: task.recipientId,
-                                  donorName: task.donorName,
-                                  donorId: task.donorId,
-                                },
-                              })
-                            }
-                          >
-                            <Text className="text-white font-semibold text-sm">
-                              Details
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </>
-                  )}
-                </>
-              )}
+              <View style={[styles.metricCard, styles.primaryMetricCard]}>
+                <LinearGradient
+                  colors={["#303F9F", "#3949AB"]}
+                  style={styles.metricGradient}
+                >
+                  <AnimatedCounter
+                    end={532}
+                    duration={2100}
+                    textStyle={[styles.metricNumber, { color: "white" }]}
+                  />
+                  <Text style={[styles.metricLabel, { color: "white" }]}>
+                    kg CO₂ Emissions Saved
+                  </Text>
+                </LinearGradient>
+              </View>
             </View>
 
-            <View>
-              <Text style={styles.sectionTitle}>Food Health Detection</Text>
-              <View style={styles.foodHealthContainer}>
+            <View className="gap-y-4 flex-col flex mt-4">
+              <Text style={styles.sectionTitle}>Features</Text>
+
+              {/* Feature 1: Indigo background + border */}
+
+              {/* Feature 2: Teal background + border */}
+              <View
+                style={styles.foodHealthContainer}
+                className="bg-teal-50 border border-teal-200 rounded-lg p-4"
+              >
                 <View style={styles.foodHealthContainerLeftHalf}>
-                  <Text style={styles.foodHealthContainerText}>
-                    Identify rotten food with Foodflow&apos;s AI algorithms to
-                    assist in healthy, sustainable donations.
-                  </Text>
-
-                  <Link
-                    href={{
-                      pathname: "/home",
-                    }}
-                    asChild
+                  <Text
+                    style={styles.foodHealthContainerText}
+                    className="text-teal-900"
                   >
-                    <TouchableOpacity className="mt-2 bg-[#3949AB] py-1 px-2 flex items-center flex-row rounded-lg shadow shadow-black/10">
-                      <Text className="text-white font-semibold text-sm text-left flex-1">
-                        Try today
+                    Take advantage of real‑time meteorological data to predict
+                    disruptions in your local food supply.
+                  </Text>
+                  <Link href={{ pathname: "/weather" }} asChild>
+                    <TouchableOpacity className="mt-2 bg-teal-600 py-1 px-2 flex-row items-center rounded-lg shadow shadow-black/10">
+                      <Text className="flex-1 text-white font-semibold text-sm">
+                        Learn more
                       </Text>
-
                       <Ionicons name="arrow-forward" size={18} color="white" />
                     </TouchableOpacity>
                   </Link>
                 </View>
+                <Image
+                  source={require("@/assets/images/weather.png")}
+                  style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: 10,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowColor: "#000",
+                    shadowRadius: 4,
+                  }}
+                />
+              </View>
 
-                <View>
-                  <Image
-                    source={require("@/assets/images/food_rotten.webp")}
-                    style={{
-                      width: 84,
-                      height: 84,
-                      borderRadius: 10,
-                      shadowOffset: { width: 0, height: 8 },
-                      shadowColor: "#000",
-                      shadowRadius: 4,
-                    }}
-                  />
+              {/* Feature 3: Orange background + border */}
+              <View
+                style={styles.foodHealthContainer}
+                className="bg-orange-200/30 border border-orange-200 rounded-lg p-4"
+              >
+                <View style={styles.foodHealthContainerLeftHalf}>
+                  <Text
+                    style={styles.foodHealthContainerText}
+                    className="text-orange-900"
+                  >
+                    View your potential donors and recipients on a map with
+                    accurate transportation estimates.
+                  </Text>
+                  <Link href={{ pathname: "/maps" }} asChild>
+                    <TouchableOpacity className="mt-2 bg-orange-600 py-1 px-2 flex-row items-center rounded-lg shadow shadow-black/10">
+                      <Text className="flex-1 text-white font-semibold text-sm">
+                        View now
+                      </Text>
+                      <Ionicons name="arrow-forward" size={18} color="white" />
+                    </TouchableOpacity>
+                  </Link>
                 </View>
+                <Image
+                  source={require("@/assets/images/map.png")}
+                  style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: 10,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowColor: "#000",
+                    shadowRadius: 4,
+                  }}
+                />
+              </View>
+
+              {/* Feature 4: Yellow background + border, lighter button */}
+              <View
+                style={styles.foodHealthContainer}
+                className="bg-yellow-50 border border-yellow-200 rounded-lg p-4"
+              >
+                <View style={styles.foodHealthContainerLeftHalf}>
+                  <Text
+                    style={styles.foodHealthContainerText}
+                    className="text-yellow-900"
+                  >
+                    Gain access to our smart marketplace with statistical
+                    recommendations.
+                  </Text>
+                  <Link href={{ pathname: "/marketplace" }} asChild>
+                    <TouchableOpacity className="mt-2 bg-yellow-400 py-1 px-2 flex-row items-center rounded-lg shadow shadow-black/10">
+                      <Text className="flex-1 text-white font-semibold text-sm">
+                        Donations made easy
+                      </Text>
+                      <Ionicons name="arrow-forward" size={18} color="white" />
+                    </TouchableOpacity>
+                  </Link>
+                </View>
+                <Image
+                  source={require("@/assets/images/donate.jpg")}
+                  style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: 10,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowColor: "#000",
+                    shadowRadius: 4,
+                  }}
+                />
               </View>
             </View>
-          </ScrollView>
+          </View>
         </View>
 
         {/* Recipient Modal */}
@@ -925,7 +954,7 @@ export default function MainPage() {
           </View>
         </Modal>
       </SafeAreaView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1050,11 +1079,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#303F9F",
-    marginBottom: 16,
+    marginBottom: -4,
+    marginTop: 8,
     marginLeft: 4,
   },
   recommendationsSection: {
     marginTop: 16,
+    marginBottom: 16,
   },
   loadingContainer: {
     alignItems: "center",
@@ -1131,9 +1162,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   foodHealthContainer: {
-    backgroundColor: "rgba(91, 123, 214, 0.2)",
+    // backgroundColor: "rgba(91, 123, 214, 0.2)",
     borderWidth: 1,
-    borderColor: "rgba(91, 123, 214, 0.7)",
+    // borderColor: "rgba(91, 123, 214, 0.7)",
     padding: 10,
     borderRadius: 12,
     display: "flex",
@@ -1142,10 +1173,10 @@ const styles = StyleSheet.create({
   },
   foodHealthContainerText: {
     fontWeight: "500",
-    color: "rgb(57, 73, 171)",
   },
   foodHealthContainerLeftHalf: {
     flex: 1,
+    paddingRight: 5,
   },
   viewMoreButton: {
     backgroundColor: "#4A4A8A",

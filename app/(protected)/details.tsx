@@ -13,6 +13,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, useLocalSearchParams } from "expo-router";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { LinearGradient } from "expo-linear-gradient";
+import MapView, {
+  Marker,
+  PROVIDER_DEFAULT,
+  PROVIDER_GOOGLE,
+} from "react-native-maps";
 
 interface RecipientDetails {
   name?: string;
@@ -163,7 +169,23 @@ const getNextRecipientOpenDate = (
   }
   return null;
 };
+const getRoleColor = (role) => {
+  switch (role) {
+    case "farmer":
+      return "orange";
+    case "donor":
+      return "blue";
+    case "recipient":
+      return "green";
+    default:
+      return "gray";
+  }
+};
 
+// Capitalize first letter
+const capitalize = (string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
 /**
  * Wrapper that formats the recipient open Date (if available) into a string including date and time.
  * Note: It expects the donorCloseTime (as a Date string) to be parseable.
@@ -193,11 +215,11 @@ export default function DetailsPage() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     recipientName: string;
-    recipientImage: string;
     recipientId: string;
     donorName: string;
-    donorImage: string;
     donorId: string;
+    transaction_type: string;
+    description: string;
   }>();
 
   const [recipientDetails, setRecipientDetails] =
@@ -348,147 +370,345 @@ export default function DetailsPage() {
     updateDecision(false);
   };
 
+  const isOffer = params.transaction_type === "offer";
+  const mainColor = isOffer ? "blue" : "teal";
+  const mainColorHex = isOffer ? "#3949AB" : "#0D9488";
+  const secondaryColorHex = isOffer ? "#7986CB" : "#5EEAD4";
+
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-row items-center justify-between p-5 bg-white border-b border-[#E2E8F0] shadow-sm">
-        <Link href="/(protected)/home">
-          <View className="p-2 rounded-full bg-white/80">
-            <Ionicons name="arrow-back" size={24} color="#303F9F" />
-          </View>
-        </Link>
-        <Text className="text-2xl font-bold text-[#303F9F] flex-1 text-center -ml-6">
-          Details
-        </Text>
-        <View className="w-6" />
-      </View>
+      {/* Header with Gradient */}
 
-      <ScrollView className="flex-1 bg-[#f8f9fa]">
-        {/* Recipient Section */}
-        <View className="p-4 mb-6">
-          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-            RECIPIENT
-          </Text>
-          <Text className="text-2xl font-semibold text-[#2d3748] mb-4">
-            {params.recipientName}
-          </Text>
-
-          <View className="bg-white rounded-xl shadow-lg shadow-black/5 mb-4 overflow-hidden">
-            <Image
-              source={{ uri: params.recipientImage }}
-              className="w-full h-[200px]"
-            />
-          </View>
-
-          {recipientDetails && (
-            <View className="bg-white rounded-xl p-4 shadow-lg shadow-black/5">
-              <View className="my-2">
-                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
-                  Address
-                </Text>
-                <Text className="text-base text-[#4A5568] leading-6 font-medium">
-                  {recipientDetails?.location
-                    ? `${recipientDetails.location.street}\n${recipientDetails.location.city}, ${recipientDetails.location.state} ${recipientDetails.location.zipCode}`
-                    : "No address available"}
-                </Text>
-              </View>
-
-              <View className="h-[1px] bg-[#e2e8f0] my-3" />
-
-              <View className="my-2">
-                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
-                  Capacity
-                </Text>
-                <Text className="text-base text-[#4A5568] leading-6 font-medium">
-                  {recipientDetails.capacity || "Not specified"} lbs
-                </Text>
-              </View>
+      {/* Content */}
+      <ScrollView className="flex-1 bg-gray-50">
+        {/* Transaction Banner */}
+        <View
+          className={`bg-${mainColor}-50 p-4 border-b border-${mainColor}-100`}
+        >
+          <View className="flex-row items-center mb-2">
+            <View className={`bg-${mainColor}-100 rounded-full p-2 mr-3`}>
+              <Ionicons
+                name={isOffer ? "gift-outline" : "hand-left-outline"}
+                size={20}
+                color={mainColorHex}
+              />
             </View>
-          )}
+            <Text className={`text-${mainColor}-700 font-bold text-lg`}>
+              {capitalize(params.transaction_type || "Unknown")}
+            </Text>
+          </View>
+          <Text className="text-gray-800 text-base">
+            {params.description || "No description provided"}
+          </Text>
         </View>
 
-        {/* Donor Section */}
-        <View className="p-4 mb-6">
-          <Text className="text-xs font-extrabold tracking-wider text-gray-600 mb-2">
-            DONOR
-          </Text>
-          <Text className="text-2xl font-semibold text-[#2d3748] mb-4">
-            {params.donorName}
-          </Text>
+        {/* Main Content Container */}
+        <View className="p-4">
+          {/* Map Section */}
+          <View className="bg-white rounded-xl overflow-hidden shadow-lg mb-6">
+            <View className="h-[200px] w-full">
+              <MapView
+                provider={PROVIDER_DEFAULT}
+                style={{ height: "100%", width: "100%" }}
+                initialRegion={{
+                  latitude: 40.5169,
+                  longitude: -74.4063,
+                  latitudeDelta: 0.0922,
+                  longitudeDelta: 0.0421,
+                }}
+              >
+                {donorDetails?.location && (
+                  <Marker
+                    coordinate={{
+                      latitude: donorDetails.location.coordinates.latitude,
+                      longitude: donorDetails.location.coordinates.longitude,
+                    }}
+                    title={donorDetails.name || "Donor"}
+                    description={donorDetails.location.street}
+                    pinColor="blue"
+                  >
+                    <View className="bg-blue-600 p-2 rounded-full">
+                      <Ionicons name="basket-outline" size={16} color="white" />
+                    </View>
+                  </Marker>
+                )}
 
-          <View className="bg-white rounded-xl shadow-lg shadow-black/5 mb-4 overflow-hidden">
-            <Image
-              source={{ uri: params.donorImage }}
-              className="w-full h-[200px]"
-            />
+                {recipientDetails?.location && (
+                  <Marker
+                    coordinate={{
+                      latitude: recipientDetails.location.coordinates.latitude,
+                      longitude:
+                        recipientDetails.location.coordinates.longitude,
+                    }}
+                    title={recipientDetails.name || "Recipient"}
+                    description={recipientDetails.location.street}
+                    pinColor="green"
+                  >
+                    <View className="bg-green-600 p-2 rounded-full">
+                      <Ionicons name="home-outline" size={16} color="white" />
+                    </View>
+                  </Marker>
+                )}
+              </MapView>
+            </View>
+
+            {/* Distance and Time Information */}
+            <View className="p-4 border-t border-gray-100">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Ionicons
+                    name="navigate-outline"
+                    size={20}
+                    color={mainColorHex}
+                  />
+                  <Text className="ml-2 text-gray-700 font-medium">
+                    Distance:
+                  </Text>
+                  <Text className="ml-2 text-gray-900 font-bold">
+                    {"15.7"} miles
+                  </Text>
+                </View>
+
+                <View className="flex-row items-center">
+                  <Ionicons name="car-outline" size={20} color={mainColorHex} />
+                  <Text className="ml-2 text-gray-700 font-medium">
+                    Drive time:
+                  </Text>
+                  <Text className="ml-2 text-gray-900 font-bold">
+                    {"34 mins"}
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
 
-          {donorDetails && (
-            <View className="bg-white rounded-xl p-4 shadow-lg shadow-black/5">
-              <View className="my-2">
-                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
-                  Address
-                </Text>
-                <Text className="text-base text-[#4A5568] leading-6 font-medium">
-                  {donorDetails?.location
-                    ? `${donorDetails.location.street}\n${donorDetails.location.city}, ${donorDetails.location.state} ${donorDetails.location.zipCode}`
-                    : "No address available"}
+          {/* Recipient Section */}
+          <View className="mb-6 bg-white rounded-xl overflow-hidden shadow-lg">
+            <LinearGradient
+              colors={["#4CAF50", "#81C784"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              className="px-4 py-3"
+            >
+              <View className="flex-row items-center p-2">
+                <Ionicons name="home-outline" size={20} color="white" />
+                <Text className="text-white font-bold text-lg ml-2">
+                  RECIPIENT
                 </Text>
               </View>
+            </LinearGradient>
 
-              <View className="h-[1px] bg-[#e2e8f0] my-3" />
+            <View className="p-4">
+              <Text className="text-xl font-semibold text-gray-800 mb-3">
+                {recipientDetails?.name || "Unknown Recipient"}
+              </Text>
 
-              <View className="my-2">
-                <Text className="text-xs font-bold text-[#3949AB] mb-1 uppercase tracking-wider">
-                  Food Types Available
-                </Text>
-                <View className="mt-1">
-                  {Object.entries(donorDetails.food_types || {}).map(
-                    ([type, value]) =>
-                      value && (
-                        <Text
-                          key={type}
-                          className="text-base text-[#4A5568] leading-6 py-0.5 font-medium"
-                        >
-                          {type
-                            .replace(/([A-Z])/g, " $1")
-                            .replace(/^./, (str) => str.toUpperCase())}
-                        </Text>
-                      )
-                  )}
+              {recipientDetails && (
+                <View>
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-1">
+                      <Ionicons
+                        name="location-outline"
+                        size={18}
+                        color="#4CAF50"
+                      />
+                      <Text className="ml-2 text-sm font-bold text-gray-600 uppercase">
+                        Address
+                      </Text>
+                    </View>
+                    <Text className="text-base text-gray-700 ml-6">
+                      {recipientDetails.location
+                        ? `${recipientDetails.location.street}\n${recipientDetails.location.city}, ${recipientDetails.location.state} ${recipientDetails.location.zipCode}`
+                        : "No address available"}
+                    </Text>
+                  </View>
+
+                  <View className="h-[1px] bg-gray-200 my-3" />
+
+                  <View>
+                    <View className="flex-row items-center mb-1">
+                      <Ionicons name="cube-outline" size={18} color="#4CAF50" />
+                      <Text className="ml-2 text-sm font-bold text-gray-600 uppercase">
+                        Capacity
+                      </Text>
+                    </View>
+                    <Text className="text-base text-gray-700 ml-6">
+                      {recipientDetails.capacity || "700"} lbs
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Donor Section */}
+          <View className="mb-6 bg-white rounded-xl overflow-hidden shadow-lg">
+            <LinearGradient
+              colors={["#1E88E5", "#64B5F6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              className="px-4 py-3"
+            >
+              <View className="flex-row items-center p-2">
+                <Ionicons name="basket-outline" size={20} color="white" />
+                <Text className="text-white font-bold text-lg ml-2">DONOR</Text>
+              </View>
+            </LinearGradient>
+
+            <View className="p-4">
+              <Text className="text-xl font-semibold text-gray-800 mb-3">
+                {donorDetails?.name || "Unknown Donor"}
+              </Text>
+
+              {donorDetails && (
+                <View>
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-1">
+                      <Ionicons
+                        name="location-outline"
+                        size={18}
+                        color="#1E88E5"
+                      />
+                      <Text className="ml-2 text-sm font-bold text-gray-600 uppercase">
+                        Address
+                      </Text>
+                    </View>
+                    <Text className="text-base text-gray-700 ml-6">
+                      {donorDetails.location
+                        ? `${donorDetails.location.street}\n${donorDetails.location.city}, ${donorDetails.location.state} ${donorDetails.location.zipCode}`
+                        : "No address available"}
+                    </Text>
+                  </View>
+
+                  <View className="h-[1px] bg-gray-200 my-3" />
+
+                  <View>
+                    <View className="flex-row items-center mb-1">
+                      <Ionicons
+                        name="nutrition-outline"
+                        size={18}
+                        color="#1E88E5"
+                      />
+                      <Text className="ml-2 text-sm font-bold text-gray-600 uppercase">
+                        Food Types Available
+                      </Text>
+                    </View>
+                    <View className="mt-1 ml-6 flex-row flex-wrap">
+                      {["Kosher", "Vegetarian", "Gluten-free"].map(
+                        ([type, value]) =>
+                          value && (
+                            <View
+                              key={type}
+                              className="bg-blue-50 rounded-full px-3 py-1 mb-2 mr-2"
+                            >
+                              <Text className="text-sm text-blue-700">
+                                {type}
+                              </Text>
+                            </View>
+                          )
+                      )}
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Timing Information */}
+          {donorDetails?.operatingHours && recipientDetails?.operatingHours && (
+            <View className="mb-6 bg-white rounded-xl overflow-hidden shadow-lg">
+              <LinearGradient
+                colors={[mainColorHex, secondaryColorHex]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="px-4 py-3"
+              >
+                <View className="flex-row items-center p-2">
+                  <Ionicons name="time-outline" size={20} color="white" />
+                  <Text className="text-white font-bold text-lg ml-2">
+                    TIMING INFORMATION
+                  </Text>
+                </View>
+              </LinearGradient>
+
+              <View className="p-4">
+                <View className="mb-4">
+                  <View className="flex-row items-center mb-1">
+                    <Ionicons
+                      name="close-circle-outline"
+                      size={18}
+                      color={mainColorHex}
+                    />
+                    <Text className="ml-2 text-sm font-bold text-gray-600 uppercase">
+                      Donor Closing Time
+                    </Text>
+                  </View>
+                  <Text className="text-base text-gray-700 ml-6">
+                    {"5/4/2025 7:00 PM"}
+                  </Text>
+                </View>
+
+                <View className="h-[1px] bg-gray-200 my-3" />
+
+                <View>
+                  <View className="flex-row items-center mb-1">
+                    <Ionicons
+                      name="open-outline"
+                      size={18}
+                      color={mainColorHex}
+                    />
+                    <Text className="ml-2 text-sm font-bold text-gray-600 uppercase">
+                      Recipient Next Available
+                    </Text>
+                  </View>
+                  <Text className="text-base text-gray-700 ml-6">
+                    {"5/5/2025 9:00 AM"}
+                  </Text>
                 </View>
               </View>
             </View>
           )}
-        </View>
 
-        {/* Decision Buttons */}
-        <View className="flex-row justify-around my-4">
+          {/* Decision Buttons */}
+          <View className="flex-row justify-around my-6">
+            <TouchableOpacity
+              className="bg-green-500 py-4 px-8 rounded-lg flex-row items-center shadow-md"
+              onPress={handleAccept}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={20}
+                color="white"
+              />
+              <Text className="text-white text-base font-semibold text-center ml-2">
+                Accept
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="bg-red-500 py-4 px-8 rounded-lg flex-row items-center shadow-md"
+              onPress={handleDecline}
+            >
+              <Ionicons name="close-circle-outline" size={20} color="white" />
+              <Text className="text-white text-base font-semibold text-center ml-2">
+                Decline
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
-            className="bg-[#4CAF50] py-3 px-6 rounded-lg"
-            onPress={handleAccept}
+            className={`bg-${mainColor}-600 py-4 px-8 rounded-lg flex-row items-center justify-center self-center mb-8 shadow-md`}
+            onPress={() => router.push("/marketplace")}
           >
-            <Text className="text-white text-base font-semibold text-center">
-              Accept
+            <Ionicons
+              name="arrow-back-circle-outline"
+              size={20}
+              color="white"
+            />
+            <Text className="text-white text-base font-semibold text-center ml-2">
+              Return to Marketplace
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            className="bg-[#F44336] py-3 px-6 rounded-lg"
-            onPress={handleDecline}
-          >
-            <Text className="text-white text-base font-semibold text-center">
-              Decline
-            </Text>
-          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          className="bg-[#303F9F] py-3 px-6 rounded-lg self-center mb-6"
-          onPress={() => router.push("/home")}
-        >
-          <Text className="text-white text-base font-semibold text-center">
-            Return to Home
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
