@@ -5,32 +5,15 @@ export default function Layout() {
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
-        name="home"
+        name="weather"
         options={{
           tabBarShowLabel: true,
 
-          title: "Home",
+          title: "Weather",
           tabBarIcon: ({ size, focused, color }) => {
             return (
               <Ionicons
-                name={focused ? "home" : "home-outline"}
-                size={27}
-                color="#303F9F"
-              />
-            );
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          tabBarShowLabel: true,
-
-          title: "History",
-          tabBarIcon: ({ size, focused, color }) => {
-            return (
-              <Ionicons
-                name={focused ? "time" : "time-outline"}
+                name={focused ? "sunny" : "sunny-outline"}
                 size={27}
                 color="#303F9F"
               />
@@ -55,6 +38,41 @@ export default function Layout() {
         }}
       />
       <Tabs.Screen
+        name="home"
+        options={{
+          tabBarShowLabel: true,
+
+          title: "Home",
+          tabBarIcon: ({ size, focused, color }) => {
+            return (
+              <Ionicons
+                name={focused ? "home" : "home-outline"}
+                size={27}
+                color="#303F9F"
+              />
+            );
+          },
+        }}
+      />
+      <Tabs.Screen
+        name="marketplace"
+        options={{
+          tabBarShowLabel: true,
+
+          title: "Marketplace",
+          tabBarIcon: ({ size, focused, color }) => {
+            return (
+              <Ionicons
+                name={focused ? "storefront" : "storefront-outline"}
+                size={27}
+                color="#303F9F"
+              />
+            );
+          },
+        }}
+      />
+
+      <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
@@ -72,12 +90,6 @@ export default function Layout() {
       />
       <Tabs.Screen
         name="details"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="marketplace"
         options={{
           href: null,
         }}

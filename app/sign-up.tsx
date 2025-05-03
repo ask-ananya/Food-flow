@@ -1132,7 +1132,7 @@ export default function SignUpScreen() {
             className="flex flex-row items-center gap-1 mb-4"
           >
             <Ionicons
-              name="arrow-up"
+              name="arrow-back"
               size={18}
               color="gray"
               className="-rotate-90 text-zinc-500"
