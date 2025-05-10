@@ -73,8 +73,21 @@ const transactionsData = [
   },
 ];
 
+// Define types for our data
+type Role = 'farmer' | 'donor' | 'recipient';
+type TransactionType = 'offer' | 'request';
+
+interface MarketplaceItem {
+  id: string;
+  name: string;
+  recipient_id: string;
+  description: string;
+  transaction_type: TransactionType;
+  created_at: string;
+}
+
 // Get role color
-const getRoleColor = (role) => {
+const getRoleColor = (role: Role): string => {
   switch (role) {
     case "farmer":
       return "rgba(255, 165, 0, 0.2)"; // Orange for farmers
@@ -86,15 +99,17 @@ const getRoleColor = (role) => {
       return "gray";
   }
 };
-const getRelativeTime = (date) => {
+
+const getRelativeTime = (date: string | Date): string => {
   try {
     return formatDistanceToNow(date, { addSuffix: true });
   } catch (error) {
     return "Unknown time";
   }
 };
+
 // Capitalize first letter
-const capitalize = (string) => {
+const capitalize = (string: string): string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
@@ -104,14 +119,16 @@ export default function Marketplace() {
   const [filterType, setFilterType] = useState("all"); // 'all', 'offer', 'request'
   const [transactions, setTransactions] = useState(transactionsData);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [userData, setUserData] = useState<any>(null); // todo change types later, too lazy rn to import types from supabase
+  const [userData, setUserData] = useState<any>(null);
   useEffect(() => {
     loadUserData();
   }, []);
 
   const loadUserData = async () => {
     try {
+      setIsLoading(true);
       const {
         data: { user: authUser },
         error: authError,
@@ -132,10 +149,12 @@ export default function Marketplace() {
       setUserData(data);
     } catch (error) {
       console.error("Error loading user data:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const [marketplace, setMarketplace] = useState<any>([]); // todo change types later, too lazy rn to import types from supabase
+  const [marketplace, setMarketplace] = useState<MarketplaceItem[]>([]);
   const loadMarketplace = async () => {
     try {
       const { data, error } = await supabase
@@ -189,168 +208,183 @@ export default function Marketplace() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* User Role Header with Gradient */}
-
-      {/* Search and Filter Section */}
-      <View className="px-4 py-3 bg-white">
-        <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mb-3">
-          <Ionicons name="search-outline" size={20} color="gray" />
-          <TextInput
-            className="flex-1 ml-2 text-base"
-            placeholder="Search transactions..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-
-          {/* Filter Dropdown */}
-          <View className="relative">
-            <TouchableOpacity
-              className="flex-row items-center ml-2 pl-2 border-l border-gray-300"
-              onPress={() => setShowFilterDropdown(!showFilterDropdown)}
-            >
-              <Text className="mr-1 text-gray-700">
-                {
-                  filterOptions.find((option) => option.value === filterType)
-                    ?.label
-                }
-              </Text>
-              <Ionicons name="chevron-down" size={16} color="gray" />
-            </TouchableOpacity>
-
-            {/* Dropdown Menu */}
-            {showFilterDropdown && (
-              <View className="absolute top-8 right-0 bg-white shadow-md rounded-md z-10 w-32">
-                {filterOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    className={`py-2 px-3 ${
-                      filterType === option.value ? "bg-gray-100" : ""
-                    }`}
-                    onPress={() => {
-                      setFilterType(option.value);
-                      setShowFilterDropdown(false);
-                    }}
-                  >
-                    <Text>{option.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <Text>Loading...</Text>
         </View>
-      </View>
+      ) : (
+        <>
+          {/* User Role Header with Gradient */}
+          {userData && (
+            <View className="px-4 py-3">
+              <Text className="text-lg font-semibold">
+                Welcome, {userData.name || 'User'}
+              </Text>
+            </View>
+          )}
+          
+          {/* Search and Filter Section */}
+          <View className="px-4 py-3 bg-white">
+            <View className="flex-row items-center bg-gray-100 rounded-lg px-3 py-2 mb-3">
+              <Ionicons name="search-outline" size={20} color="gray" />
+              <TextInput
+                className="flex-1 ml-2 text-base"
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
 
-      {/* Transactions List */}
-      <ScrollView className="flex-1 px-4 pt-2 pb-6">
-        {transactions.length === 0 ? (
-          <View className="py-8 items-center">
-            <Ionicons name="alert-circle-outline" size={48} color="gray" />
-            <Text className="text-gray-500 text-center mt-2">
-              No transactions found
-            </Text>
-          </View>
-        ) : (
-          marketplace.map((item, index) => {
-            const isSuggested = index <= 2;
-            const isOffer = item.transaction_type === "offer";
-            return (
-              <Link
-                key={item.id}
-                href={{
-                  pathname: "/details",
-                  params: {
-                    recipientName: item.name,
-                    recipientId: item.recipient_id,
-                    donorName: userData.name,
-                    donorId: userData.id,
-                    description: item.description,
-                    transaction_type: item.transaction_type,
-                  },
-                }}
-                asChild
-              >
+              {/* Filter Dropdown */}
+              <View className="relative">
                 <TouchableOpacity
-                  key={item.id}
-                  className={`mb-4 p-4 rounded-lg border ${
-                    isOffer
-                      ? isSuggested
-                        ? "bg-yellow-50 border-yellow-400"
-                        : "bg-blue-50 border-blue-200"
-                      : isSuggested
-                      ? "bg-yellow-50 border-yellow-400"
-                      : "bg-teal-50 border-teal-200"
-                  }`}
+                  className="flex-row items-center ml-2 pl-2 border-l border-gray-300"
+                  onPress={() => setShowFilterDropdown(!showFilterDropdown)}
                 >
-                  <View className="flex-row justify-between items-start mb-2">
-                    <View className="flex-row items-center">
-                      {isSuggested && (
-                        <Ionicons
-                          name="star"
-                          size={18}
-                          color="gold"
-                          className="mr-1"
-                        />
-                      )}
-                      <Ionicons
-                        name={
-                          item.transaction_type === "offer"
-                            ? "gift-outline"
-                            : "hand-left-outline"
-                        }
-                        size={20}
-                        color={item.type === "offer" ? "blue" : "teal"}
-                      />
-                      <Text className="ml-2 font-bold text-base">
-                        {capitalize(item.transaction_type)}
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center">
-                      <Ionicons name="person-outline" size={16} color="gray" />
-                      <Text className="ml-1 text-sm text-gray-600">
-                        {item.name}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text className="text-gray-800 mb-3">{item.description}</Text>
-
-                  <View className="flex-row justify-between items-center">
-                    <View className="flex-row items-center">
-                      <Ionicons
-                        name="calendar-outline"
-                        size={16}
-                        color="gray"
-                      />
-                      <Text className="ml-1 text-xs text-gray-500">
-                        {getRelativeTime(item.created_at)}
-                      </Text>
-                    </View>
-
-                    <View className="flex-row items-center">
-                      <Text
-                        className={`mr-1 text-sm ${
-                          item.transaction_type === "offer"
-                            ? "text-blue-600"
-                            : "text-teal-600"
-                        }`}
-                      >
-                        View Details
-                      </Text>
-                      <Ionicons
-                        name="arrow-forward-outline"
-                        size={16}
-                        color={
-                          item.transaction_type === "offer" ? "blue" : "teal"
-                        }
-                      />
-                    </View>
-                  </View>
+                  <Text className="mr-1 text-gray-700">
+                    {
+                      filterOptions.find((option) => option.value === filterType)
+                        ?.label
+                    }
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="gray" />
                 </TouchableOpacity>
-              </Link>
-            );
-          })
-        )}
-      </ScrollView>
+
+                {/* Dropdown Menu */}
+                {showFilterDropdown && (
+                  <View className="absolute top-8 right-0 bg-white shadow-md rounded-md z-10 w-32">
+                    {filterOptions.map((option) => (
+                      <TouchableOpacity
+                        key={option.value}
+                        className={`py-2 px-3 ${
+                          filterType === option.value ? "bg-gray-100" : ""
+                        }`}
+                        onPress={() => {
+                          setFilterType(option.value);
+                          setShowFilterDropdown(false);
+                        }}
+                      >
+                        <Text>{option.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Transactions List */}
+          <ScrollView className="flex-1 px-4 pt-2 pb-6">
+            {transactions.length === 0 ? (
+              <View className="py-8 items-center">
+                <Ionicons name="alert-circle-outline" size={48} color="gray" />
+                <Text className="text-gray-500 text-center mt-2">
+                  No transactions found
+                </Text>
+              </View>
+            ) : (
+              marketplace.map((item: MarketplaceItem, index: number) => {
+                const isSuggested = index <= 2;
+                const isOffer = item.transaction_type === "offer";
+                return (
+                  <Link
+                    key={item.id}
+                    href={{
+                      pathname: "/details",
+                      params: {
+                        recipientName: item.name,
+                        recipientId: item.recipient_id,
+                        donorName: userData.name,
+                        donorId: userData.id,
+                        description: item.description,
+                        transaction_type: item.transaction_type,
+                      },
+                    }}
+                    asChild
+                  >
+                    <TouchableOpacity
+                      key={item.id}
+                      className={`mb-4 p-4 rounded-lg border ${
+                        isOffer
+                          ? isSuggested
+                            ? "bg-yellow-50 border-yellow-400"
+                            : "bg-blue-50 border-blue-200"
+                          : isSuggested
+                          ? "bg-yellow-50 border-yellow-400"
+                          : "bg-teal-50 border-teal-200"
+                      }`}
+                    >
+                      <View className="flex-row justify-between items-start mb-2">
+                        <View className="flex-row items-center">
+                          {isSuggested && (
+                            <Ionicons
+                              name="star"
+                              size={18}
+                              color="gold"
+                              className="mr-1"
+                            />
+                          )}
+                          <Ionicons
+                            name={
+                              item.transaction_type === "offer"
+                                ? "gift-outline"
+                                : "hand-left-outline"
+                            }
+                            size={20}
+                            color={item.transaction_type === "offer" ? "blue" : "teal"}
+                          />
+                          <Text className="ml-2 font-bold text-base">
+                            {capitalize(item.transaction_type)}
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center">
+                          <Ionicons name="person-outline" size={16} color="gray" />
+                          <Text className="ml-1 text-sm text-gray-600">
+                            {item.name}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text className="text-gray-800 mb-3">{item.description}</Text>
+
+                      <View className="flex-row justify-between items-center">
+                        <View className="flex-row items-center">
+                          <Ionicons
+                            name="calendar-outline"
+                            size={16}
+                            color="gray"
+                          />
+                          <Text className="ml-1 text-xs text-gray-500">
+                            {getRelativeTime(item.created_at)}
+                          </Text>
+                        </View>
+
+                        <View className="flex-row items-center">
+                          <Text
+                            className={`mr-1 text-sm ${
+                              item.transaction_type === "offer"
+                                ? "text-blue-600"
+                                : "text-teal-600"
+                            }`}
+                          >
+                            View Details
+                          </Text>
+                          <Ionicons
+                            name="arrow-forward-outline"
+                            size={16}
+                            color={
+                              item.transaction_type === "offer" ? "blue" : "teal"
+                            }
+                          />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </Link>
+                );
+              })
+            )}
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }
