@@ -39,3 +39,19 @@ yarn-error.*
 
 expo-env.d.ts
 # @end expo-cli
+
+# Certificate files
+**/foodflowcertificate.json
+**/*.json.key
+**/*.pem
+**/*.key
+**/*.crt
+**/*.cer
+**/*.der
+**/*.p12
+**/*.pfx
+
+# Environment variables
+.env
+.env.local
+.env.*.local
